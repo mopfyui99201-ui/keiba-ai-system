@@ -1,5 +1,5 @@
 // 初期パスワード（ランダム生成・セキュア）
-const INITIAL_PASSWORD = "Keiba2026!AI";
+const INITIAL_PASSWORD = "7777";
 
 const passwordInput = document.getElementById("password-input");
 const authBtn = document.getElementById("auth-btn");
