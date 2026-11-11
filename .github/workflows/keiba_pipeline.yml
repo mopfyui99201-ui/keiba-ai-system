@@ -30,6 +30,7 @@ on:
     - cron: '30 12 * * *'
     # 日本時間 22:30 = UTC 13:30
     - cron: '30 13 * * *'
+  # GitHub画面から手動実行可能
   workflow_dispatch:
 
 jobs:
