@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>競馬AI予想システム - Elizabeth Web</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 認証オーバーレイ -->
+    <div id="auth-overlay" class="auth-overlay active">
+        <div class="auth-card">
+            <h1>🔐 競馬AI予想システム</h1>
+            <p>暗証番号を入力してください</p>
+            <input type="password" id="password-input" placeholder="パスワードを入力" maxlength="10">
+            <button id="auth-btn" class="auth-btn">ログイン</button>
+            <div id="auth-error" class="auth-error"></div>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ（認証後表示） -->
+    <div id="main-content" class="main-content" style="display: none;">
+        <header class="app-header">
+            <h1>🏇 競馬AI予想システム - Elizabeth Web</h1>
+            <div class="header-info" id="header-info">
+                最終更新: <span id="last-updated">-</span>
+            </div>
+        </header>
+
+        <!-- タブナビゲーション -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="prediction">📊 タブ1：予想一覧</button>
+            <button class="tab-btn" data-tab="stats">📈 タブ2：成績・学習ログ</button>
+        </nav>
+
+        <!-- タブ1：予想一覧 -->
+        <section id="tab-prediction" class="tab-panel active">
+            <div class="panel-header">
+                <h2>🎯 全国最新予想一覧</h2>
+                <span class="badge" id="prediction-count">0 レース</span>
+            </div>
+            <div class="card-grid" id="prediction-grid">
+                <!-- 予想カードがここに挿入される -->
+            </div>
+        </section>
+
+        <!-- タブ2：成績・学習ログ -->
+        <section id="tab-stats" class="tab-panel">
+            <div class="panel-header">
+                <h2>📊 成績・学習ログ</h2>
+                <span class="badge" id="stats-count">0 会場</span>
+            </div>
+            <div class="stats-grid" id="stats-grid">
+                <!-- 統計カードがここに挿入される -->
+            </div>
+            <div class="learning-log" id="learning-log">
+                <!-- 学習ログがここに挿入される -->
+            </div>
+        </section>
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+</html>

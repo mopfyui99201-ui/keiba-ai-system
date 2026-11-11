@@ -1,0 +1,14 @@
+# ビルドアーティファクト
+dist/
+build/
+*.spec
+__pycache__/
+*.pyc
+
+# 設定・履歴ファイル（実行時に生成）
+predictions_history.json
+venue_weights.json
+ai_settings.json
+
+# macOS
+.DS_Store

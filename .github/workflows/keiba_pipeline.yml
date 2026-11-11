@@ -1,0 +1,67 @@
+name: 競馬AI予想パイプライン
+
+on:
+  schedule:
+    # 日本時間 09:00 = UTC 00:00
+    - cron: '0 0 * * *'
+    # 日本時間 10:30 = UTC 01:30
+    - cron: '30 1 * * *'
+    # 日本時間 11:30 = UTC 02:30
+    - cron: '30 2 * * *'
+    # 日本時間 12:30 = UTC 03:30
+    - cron: '30 3 * * *'
+    # 日本時間 13:30 = UTC 04:30
+    - cron: '30 4 * * *'
+    # 日本時間 14:30 = UTC 05:30
+    - cron: '30 5 * * *'
+    # 日本時間 15:30 = UTC 06:30
+    - cron: '30 6 * * *'
+    # 日本時間 16:30 = UTC 07:30
+    - cron: '30 7 * * *'
+    # 日本時間 17:30 = UTC 08:30
+    - cron: '30 8 * * *'
+    # 日本時間 18:30 = UTC 09:30
+    - cron: '30 9 * * *'
+    # 日本時間 19:30 = UTC 10:30
+    - cron: '30 10 * * *'
+    # 日本時間 20:30 = UTC 11:30
+    - cron: '30 11 * * *'
+    # 日本時間 21:30 = UTC 12:30
+    - cron: '30 12 * * *'
+    # 日本時間 22:30 = UTC 13:30
+    - cron: '30 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  keiba-prediction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 依存パッケージをインストール
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 pandas lxml
+
+      - name: 競馬AIクラウドタスク実行
+        run: python cloud_task.py
+        env:
+          TZ: Asia/Tokyo
+
+      - name: 更新ファイルをコミット＆プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add web/data/predictions.json web/data/learning.json web/data/schedule.json predictions_history.json venue_weights.json ai_settings.json
+          git commit -m "🤖 [auto] 競馬AI予想データ更新 $(date '+%Y/%m/%d %H:%M:%S JST')" || echo "コミット対象なし"
+          git push || echo "プッシュ失敗（変更なしの可能性）"
