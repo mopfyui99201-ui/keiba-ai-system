@@ -62,6 +62,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add web/data/predictions.json web/data/learning.json web/data/schedule.json predictions_history.json venue_weights.json ai_settings.json
+          git add data/predictions.json data/learning.json data/schedule.json predictions_history.json venue_weights.json ai_settings.json
           git commit -m "🤖 [auto] 競馬AI予想データ更新 $(date '+%Y/%m/%d %H:%M:%S JST')" || echo "コミット対象なし"
           git push || echo "プッシュ失敗（変更なしの可能性）"

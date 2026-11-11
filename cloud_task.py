@@ -48,7 +48,7 @@ except Exception as e:
     print(f"[WARN] predictor.py インポート失敗: {e}")
     _HAS_PREDICTOR = False
 
-WEB_DATA_DIR = os.path.join(PROJECT_ROOT, "web", "data")
+WEB_DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 WEB_DATA_FILE = os.path.join(WEB_DATA_DIR, "predictions.json")
 WEB_LEARN_FILE = os.path.join(WEB_DATA_DIR, "learning.json")
 

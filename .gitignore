@@ -10,5 +10,8 @@ predictions_history.json
 venue_weights.json
 ai_settings.json
 
+# Web表示用データ（GitHub Actionsで生成）
+data/
+
 # macOS
 .DS_Store
