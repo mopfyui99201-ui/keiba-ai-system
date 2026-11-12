@@ -33,6 +33,9 @@ on:
   # GitHub画面から手動実行可能
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   keiba-prediction:
     runs-on: ubuntu-latest
