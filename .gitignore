@@ -5,13 +5,10 @@ build/
 __pycache__/
 *.pyc
 
-# 設定・履歴ファイル（実行時に生成）
+# 設定・履歴ファイル（実行時に生成、GitHub Actionsで再生成される）
 predictions_history.json
 venue_weights.json
 ai_settings.json
-
-# Web表示用データ（GitHub Actionsで生成）
-data/
 
 # macOS
 .DS_Store
