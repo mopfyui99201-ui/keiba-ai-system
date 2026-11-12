@@ -46,7 +46,7 @@ HEADERS = {
     "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
 }
 
-REQUEST_TIMEOUT = 15
+REQUEST_TIMEOUT = 5
 
 
 def is_nar_venue(venue):

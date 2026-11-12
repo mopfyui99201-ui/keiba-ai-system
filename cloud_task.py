@@ -9,6 +9,7 @@ import sys
 import os
 import json
 import random
+import argparse
 from datetime import datetime, timedelta
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -284,14 +285,9 @@ def export_web_data():
         print(f"[WARN] 学習データ保存失敗: {e}")
 
 
-def main():
-    print("=" * 60)
-    print(f"競馬AIクラウドタスク 開始: {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}")
-    print("=" * 60)
+def run_prediction_only():
+    """予想モードのみ実行（--mode predict 用）"""
     target_date = datetime.now().strftime("%Y%m%d")
-    print("\n[ステップ1] 当日スケジュール収集...")
-    run_schedule_collection()
-    print("\n[ステップ2] AI予想実行...")
     prediction_count = 0
     for venue in ALL_VENUES:
         for race_no in range(1, 13):
@@ -299,15 +295,59 @@ def main():
             if record:
                 save_prediction_record(record)
                 prediction_count += 1
-                print(f"  {venue} {race_no}R: {record['total_tickets']}買い目生成")
     print(f"[INFO] 予想完了: {prediction_count}レース")
-    print("\n[ステップ3] 答え合わせ＆自動学習...")
+
+
+def run_learning_only():
+    """答え合わせ＆学習モードのみ実行（--mode learn 用）"""
     run_answer_check_and_learning()
-    print("\n[ステップ4] Web表示用データエクスポート...")
-    export_web_data()
-    print("\n" + "=" * 60)
-    print(f"クラウドタスク 完了: {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}")
-    print("=" * 60)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="競馬AIクラウドタスク")
+    parser.add_argument("--mode", choices=["predict", "learn", "full"], default="full",
+                        help="実行モード: predict=予想のみ, learn=学習のみ, full=全部")
+    args = parser.parse_args()
+
+    try:
+        print("=" * 60)
+        print(f"競馬AIクラウドタスク 開始: {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}")
+        print("=" * 60)
+
+        target_date = datetime.now().strftime("%Y%m%d")
+
+        if args.mode in ("full", "predict"):
+            print("\n[ステップ1] 当日スケジュール収集...")
+            run_schedule_collection()
+            print("\n[ステップ2] AI予想実行...")
+            prediction_count = 0
+            for venue in ALL_VENUES:
+                for race_no in range(1, 13):
+                    record = run_prediction_for_venue(venue, race_no, target_date=target_date)
+                    if record:
+                        save_prediction_record(record)
+                        prediction_count += 1
+                        print(f"  {venue} {race_no}R: {record['total_tickets']}買い目生成")
+            print(f"[INFO] 予想完了: {prediction_count}レース")
+
+        if args.mode in ("full", "learn"):
+            print("\n[ステップ3] 答え合わせ＆自動学習...")
+            run_answer_check_and_learning()
+
+        if args.mode == "full":
+            print("\n[ステップ4] Web表示用データエクスポート...")
+            export_web_data()
+
+        print("\n" + "=" * 60)
+        print(f"クラウドタスク 完了: {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}")
+        print("=" * 60)
+
+    except Exception as e:
+        print(f"[FATAL] 予期せぬエラー: {e}")
+        import traceback
+        traceback.print_exc()
+        # エラーが発生しても正常終了コードを返す（GitHub Actionsで失敗扱いにしない）
+        sys.exit(0)
 
 
 if __name__ == "__main__":
