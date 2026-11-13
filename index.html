@@ -27,34 +27,95 @@
             </div>
         </header>
 
-        <!-- タブナビゲーション -->
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="prediction">📊 タブ1：予想一覧</button>
-            <button class="tab-btn" data-tab="stats">📈 タブ2：成績・学習ログ</button>
+        <!-- メニューバー -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-section="jra">🏇 中央競馬（JRA）</button>
+            <button class="nav-btn" data-section="nar">🏁 地方競馬（NAR）</button>
+            <button class="nav-btn" data-section="bankei">🐴 ばんえい競馬（帯広）</button>
+            <button class="nav-btn" data-section="top">⭐ ★4以上（高期待値）</button>
+            <button class="nav-btn" data-section="stats">📊 成績・学習ログ</button>
+            <button class="nav-btn admin-btn" data-section="admin">⚙️ 管理者メニュー</button>
         </nav>
 
-        <!-- タブ1：予想一覧 -->
-        <section id="tab-prediction" class="tab-panel active">
-            <div class="panel-header">
-                <h2>🎯 全国最新予想一覧</h2>
-                <span class="badge" id="prediction-count">0 レース</span>
+        <!-- 絞り込みフィルター -->
+        <div class="filter-bar" id="filter-bar" style="display: none;">
+            <label>会場: <select id="filter-venue"><option value="">全会場</option></select></label>
+            <label>日付: <select id="filter-date"><option value="">全日付</option></select></label>
+            <button id="filter-reset" class="btn-reset">リセット</button>
+        </div>
+
+        <!-- セクション：中央競馬 -->
+        <section id="section-jra" class="race-section active">
+            <div class="section-header">
+                <h2>🏇 中央競馬（JRA）予想一覧</h2>
+                <span class="badge" id="count-jra">0 レース</span>
             </div>
-            <div class="card-grid" id="prediction-grid">
-                <!-- 予想カードがここに挿入される -->
-            </div>
+            <div class="card-grid" id="grid-jra"></div>
         </section>
 
-        <!-- タブ2：成績・学習ログ -->
-        <section id="tab-stats" class="tab-panel">
-            <div class="panel-header">
+        <!-- セクション：地方競馬 -->
+        <section id="section-nar" class="race-section">
+            <div class="section-header">
+                <h2>🏁 地方競馬（NAR）予想一覧</h2>
+                <span class="badge" id="count-nar">0 レース</span>
+            </div>
+            <div class="card-grid" id="grid-nar"></div>
+        </section>
+
+        <!-- セクション：ばんえい -->
+        <section id="section-bankei" class="race-section">
+            <div class="section-header">
+                <h2>🐴 ばんえい競馬（帯広）予想一覧</h2>
+                <span class="badge" id="count-bankei">0 レース</span>
+            </div>
+            <div class="card-grid" id="grid-bankei"></div>
+        </section>
+
+        <!-- セクション：★4以上 -->
+        <section id="section-top" class="race-section">
+            <div class="section-header">
+                <h2>⭐ ★4以上（高期待値ピックアップ）</h2>
+                <span class="badge" id="count-top">0 レース</span>
+            </div>
+            <div class="card-grid" id="grid-top"></div>
+        </section>
+
+        <!-- セクション：成績・学習ログ -->
+        <section id="section-stats" class="race-section">
+            <div class="section-header">
                 <h2>📊 成績・学習ログ</h2>
-                <span class="badge" id="stats-count">0 会場</span>
+                <span class="badge" id="count-stats">0 会場</span>
             </div>
-            <div class="stats-grid" id="stats-grid">
-                <!-- 統計カードがここに挿入される -->
+            <div class="stats-grid" id="grid-stats"></div>
+            <div class="learning-log" id="log-stats"></div>
+        </section>
+
+        <!-- セクション：管理者メニュー -->
+        <section id="section-admin" class="race-section admin-section">
+            <div class="section-header">
+                <h2>⚙️ 管理者メニュー</h2>
+                <span class="badge admin-badge">管理者専用</span>
             </div>
-            <div class="learning-log" id="learning-log">
-                <!-- 学習ログがここに挿入される -->
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <h3>📊 システムステータス</h3>
+                    <div class="status-item"><span>最終実行:</span><span id="status-last-run">-</span></div>
+                    <div class="status-item"><span>取得レース数:</span><span id="status-race-count">-</span></div>
+                    <div class="status-item"><span>データ更新:</span><span id="status-data-updated">-</span></div>
+                </div>
+                <div class="admin-card">
+                    <h3>🎯 AI重み付け設定</h3>
+                    <div id="admin-weights"></div>
+                    <button class="btn-reset-weights" id="btn-reset-weights">重みをリセット</button>
+                </div>
+                <div class="admin-card">
+                    <h3>🔧 操作</h3>
+                    <div class="admin-links">
+                        <a href="https://github.com/mopfyui99201-ui/keiba-ai-system/actions" target="_blank" class="admin-link">🚀 GitHub Actions手動実行</a>
+                        <button class="admin-link" id="btn-export-history">📤 履歴エクスポート</button>
+                        <button class="admin-link" id="btn-reset-history">🗑️ 履歴リセット</button>
+                    </div>
+                </div>
             </div>
         </section>
     </div>

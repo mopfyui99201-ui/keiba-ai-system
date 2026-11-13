@@ -486,4 +486,200 @@ body {
         margin-top: 4px;
     }
 }
+
+/* メニューバー */
+.main-nav {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    background: #1e293b;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+}
+
+.nav-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    color: #94a3b8;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.nav-btn.active {
+    background: #007acc;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+}
+
+.nav-btn:not(.active):hover {
+    background: #334155;
+    color: #f8fafc;
+}
+
+.nav-btn.admin-btn {
+    background: #334155;
+    color: #fbbf24;
+}
+
+.nav-btn.admin-btn.active {
+    background: #fbbf24;
+    color: #0f172a;
+}
+
+/* フィルターバー */
+.filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #1e293b;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    align-items: center;
+}
+
+.filter-bar select {
+    padding: 8px 12px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.filter-bar select:focus {
+    outline: none;
+    border-color: #38bdf8;
+}
+
+.btn-reset {
+    padding: 8px 16px;
+    background: #334155;
+    color: #f8fafc;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn-reset:hover {
+    background: #475569;
+}
+
+/* チケットフォーメーション */
+.ticket-form {
+    font-size: 11px;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* 管理者セクション */
+.admin-section {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 24px;
+}
+
+.admin-badge {
+    background: #fbbf24;
+    color: #0f172a;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.admin-card {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.admin-card h3 {
+    color: #38bdf8;
+    font-size: 16px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 8px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #334155;
+    font-size: 13px;
+}
+
+.status-item span:first-child {
+    color: #94a3b8;
+}
+
+.status-item span:last-child {
+    color: #f8fafc;
+    font-family: monospace;
+}
+
+.btn-reset-weights {
+    width: 100%;
+    padding: 10px;
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.btn-reset-weights:hover {
+    background: #b91c1c;
+}
+
+.admin-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-link {
+    display: block;
+    padding: 10px 16px;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #38bdf8;
+    border-radius: 6px;
+    font-size: 13px;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.admin-link:hover {
+    background: #38bdf8;
+    color: #ffffff;
+}
 }

@@ -87,6 +87,7 @@ def run_prediction_for_venue(venue, race_no, target_date=None):
                 "戦略": strategy_key,
                 "券種": t.get("券種", ""),
                 "買い目": t.get("買い目", ""),
+                "フォーメーション": t.get("フォーメーション", ""),
                 "期待値": t.get("期待値", 0),
                 "投資比率": t.get("投資比率", 0),
                 "コメント": t.get("コメント", ""),
