@@ -202,107 +202,6 @@ def _parse_sponavi_result(race_id):
         print(f"[WARN] スポーツナビ 結果取得失敗 (race_id={race_id}): {e}")
     return []
 
-
-def _generate_mock_data(venue, race_no):
-    is_nar = is_nar_venue(venue)
-    venue_type = "地方競馬(NAR)" if is_nar else "中央競馬(JRA)"
-    print(f"[INFO] モックデータ生成：{venue_type} {venue} {race_no}R")
-    base_horses = [
-        {"枠番": 1, "馬番": 1, "馬名": "レガレイラ", "前走脚質": "追込", "前走着順": 5, "前走上がり": 33.2, "展開不利": 1, "血統系統": "サンデー系", "オッズ": 2.5, "人気": 1, "持ちタイム": 118.5, "騎手勝率": 18.5, "コース適性": 85, "騎手名": "C.ルメール", "持ちタイム単位": "秒"},
-        {"枠番": 2, "馬番": 2, "馬名": "ホールネス", "前走脚質": "先行", "前走着順": 2, "前走上がり": 34.5, "展開不利": 0, "血統系統": "ロベルト系", "オッズ": 4.8, "人気": 2, "持ちタイム": 119.2, "騎手勝率": 15.2, "コース適性": 78, "騎手名": "M.デムーロ", "持ちタイム単位": "秒"},
-        {"枠番": 3, "馬番": 3, "馬名": "スタニングローズ", "前走脚質": "先行", "前走着順": 6, "前走上がり": 35.1, "展開不利": 0, "血統系統": "キングマンボ系", "オッズ": 6.3, "人気": 3, "持ちタイム": 119.8, "騎手勝率": 12.3, "コース適性": 72, "騎手名": "C.ルメール", "持ちタイム単位": "秒"},
-        {"枠番": 4, "馬番": 4, "馬名": "シンリョクカ", "前走脚質": "先行", "前走着順": 1, "前走上がり": 34.2, "展開不利": 0, "血統系統": "サンデー系", "オッズ": 12.0, "人気": 4, "持ちタイム": 117.8, "騎手勝率": 20.1, "コース適性": 88, "騎手名": "吉田豊", "持ちタイム単位": "秒"},
-        {"枠番": 5, "馬番": 5, "馬名": "サリエラ", "前走脚質": "追込", "前走着順": 12, "前走上がり": 34.0, "展開不利": 1, "血統系統": "ディープ系", "オッズ": 8.5, "人気": 3, "持ちタイム": 118.9, "騎手勝率": 16.7, "コース適性": 82, "騎手名": "横山典弘", "持ちタイム単位": "秒"},
-        {"枠番": 6, "馬番": 6, "馬名": "ライラック", "前走脚質": "差し", "前走着順": 4, "前走上がり": 33.9, "展開不利": 1, "血統系統": "オルフ系", "オッズ": 15.2, "人気": 5, "持ちタイム": 119.5, "騎手勝率": 14.1, "コース適性": 75, "騎手名": "藤岡康太", "持ちタイム単位": "秒"},
-        {"枠番": 7, "馬番": 7, "馬名": "ルージュリナージュ", "前走脚質": "追込", "前走着順": 5, "前走上がり": 33.5, "展開不利": 1, "血統系統": "サンデー系", "オッズ": 25.0, "人気": 7, "持ちタイム": 119.1, "騎手勝率": 17.3, "コース適性": 80, "騎手名": "川田将雅", "持ちタイム単位": "秒"},
-        {"枠番": 8, "馬番": 8, "馬名": "コスタボニータ", "前走脚質": "先行", "前走着順": 11, "前走上がり": 35.5, "展開不利": 0, "血統系統": "サンデー系", "オッズ": 45.0, "人気": 8, "持ちタイム": 120.3, "騎手勝率": 11.8, "コース適性": 68, "騎手名": "松山弘平", "持ちタイム単位": "秒"},
-    ]
-    venue_multiplier = 1.0
-    if is_nar:
-        venue_multiplier = 1.5
-    if race_no in [1, 2, 3]:
-        venue_multiplier *= 0.9
-    if race_no in [11, 12]:
-        venue_multiplier *= 1.2
-    data = []
-    for horse in base_horses:
-        horse_copy = dict(horse)
-        horse_copy["オッズ"] = round(horse["オッズ"] * venue_multiplier * random.uniform(0.8, 1.2), 1)
-        data.append(horse_copy)
-    data.sort(key=lambda x: x["オッズ"])
-    for i, horse in enumerate(data):
-        horse["人気"] = i + 1
-    track_conditions = ["良", "稍重", "重", "不良"]
-    if is_nar:
-        track_conditions = ["稍重", "重", "重", "不良", "不良"]
-    track_condition = random.choice(track_conditions)
-    for row in data:
-        row["馬場状態"] = track_condition
-    today = datetime.now()
-    if is_nar:
-        days_ahead = random.randint(0, 6)
-        race_date = today + timedelta(days=days_ahead)
-    else:
-        days_to_saturday = (5 - today.weekday()) % 7
-        if days_to_saturday == 0:
-            days_to_saturday = 7
-        race_date = today + timedelta(days=days_to_saturday)
-    race_date_str = race_date.strftime("%Y年%m月%d日")
-    race_start_minutes = 10 * 60 + 0 + (race_no - 1) * 30
-    start_hour = race_start_minutes // 60
-    start_minute = race_start_minutes % 60
-    race_time_str = f"{start_hour:02d}:{start_minute:02d}"
-    df = pd.DataFrame(data)
-    print(f"データ収集完了（モック）：{venue} {race_no}R / 種別:{venue_type} / 馬場状態: {track_condition} / 開催日:{race_date_str} / 発走:{race_time_str}")
-    return df, track_condition, race_date_str, race_time_str
-
-
-def _generate_mock_data_with_date(venue, race_no, target_date):
-    """未来日付指定用のモックデータ生成（エリザベス女王杯など）"""
-    is_nar = is_nar_venue(venue)
-    venue_type = "地方競馬(NAR)" if is_nar else "中央競馬(JRA)"
-    print(f"[INFO] 未来日付モックデータ生成：{venue_type} {venue} {race_no}R / 日付:{target_date}")
-    base_horses = [
-        {"枠番": 1, "馬番": 1, "馬名": "レガレイラ", "前走脚質": "追込", "前走着順": 5, "前走上がり": 33.2, "展開不利": 1, "血統系統": "サンデー系", "オッズ": 2.5, "人気": 1, "持ちタイム": 118.5, "騎手勝率": 18.5, "コース適性": 85, "騎手名": "C.ルメール", "持ちタイム単位": "秒"},
-        {"枠番": 2, "馬番": 2, "馬名": "ホールネス", "前走脚質": "先行", "前走着順": 2, "前走上がり": 34.5, "展開不利": 0, "血統系統": "ロベルト系", "オッズ": 4.8, "人気": 2, "持ちタイム": 119.2, "騎手勝率": 15.2, "コース適性": 78, "騎手名": "M.デムーロ", "持ちタイム単位": "秒"},
-        {"枠番": 3, "馬番": 3, "馬名": "スタニングローズ", "前走脚質": "先行", "前走着順": 6, "前走上がり": 35.1, "展開不利": 0, "血統系統": "キングマンボ系", "オッズ": 6.3, "人気": 3, "持ちタイム": 119.8, "騎手勝率": 12.3, "コース適性": 72, "騎手名": "C.ルメール", "持ちタイム単位": "秒"},
-        {"枠番": 4, "馬番": 4, "馬名": "シンリョクカ", "前走脚質": "先行", "前走着順": 1, "前走上がり": 34.2, "展開不利": 0, "血統系統": "サンデー系", "オッズ": 12.0, "人気": 4, "持ちタイム": 117.8, "騎手勝率": 20.1, "コース適性": 88, "騎手名": "吉田豊", "持ちタイム単位": "秒"},
-        {"枠番": 5, "馬番": 5, "馬名": "サリエラ", "前走脚質": "追込", "前走着順": 12, "前走上がり": 34.0, "展開不利": 1, "血統系統": "ディープ系", "オッズ": 8.5, "人気": 3, "持ちタイム": 118.9, "騎手勝率": 16.7, "コース適性": 82, "騎手名": "横山典弘", "持ちタイム単位": "秒"},
-        {"枠番": 6, "馬番": 6, "馬名": "ライラック", "前走脚質": "差し", "前走着順": 4, "前走上がり": 33.9, "展開不利": 1, "血統系統": "オルフ系", "オッズ": 15.2, "人気": 5, "持ちタイム": 119.5, "騎手勝率": 14.1, "コース適性": 75, "騎手名": "藤岡康太", "持ちタイム単位": "秒"},
-        {"枠番": 7, "馬番": 7, "馬名": "ルージュリナージュ", "前走脚質": "追込", "前走着順": 5, "前走上がり": 33.5, "展開不利": 1, "血統系統": "サンデー系", "オッズ": 25.0, "人気": 7, "持ちタイム": 119.1, "騎手勝率": 17.3, "コース適性": 80, "騎手名": "川田将雅", "持ちタイム単位": "秒"},
-        {"枠番": 8, "馬番": 8, "馬名": "コスタボニータ", "前走脚質": "先行", "前走着順": 11, "前走上がり": 35.5, "展開不利": 0, "血統系統": "サンデー系", "オッズ": 45.0, "人気": 8, "持ちタイム": 120.3, "騎手勝率": 11.8, "コース適性": 68, "騎手名": "松山弘平", "持ちタイム単位": "秒"},
-    ]
-    venue_multiplier = 1.0
-    if is_nar:
-        venue_multiplier = 1.5
-    if race_no in [1, 2, 3]:
-        venue_multiplier *= 0.9
-    if race_no in [11, 12]:
-        venue_multiplier *= 1.2
-    data = []
-    for horse in base_horses:
-        horse_copy = dict(horse)
-        horse_copy["オッズ"] = round(horse["オッズ"] * venue_multiplier * random.uniform(0.8, 1.2), 1)
-        data.append(horse_copy)
-    data.sort(key=lambda x: x["オッズ"])
-    for i, horse in enumerate(data):
-        horse["人気"] = i + 1
-    track_conditions = ["良", "稍重", "重", "不良"]
-    if is_nar:
-        track_conditions = ["稍重", "重", "重", "不良", "不良"]
-    track_condition = random.choice(track_conditions)
-    for row in data:
-        row["馬場状態"] = track_condition
-    race_date_str = f"{target_date[:4]}年{target_date[4:6]}月{target_date[6:]}日"
-    race_start_minutes = 10 * 60 + 0 + (race_no - 1) * 30
-    start_hour = race_start_minutes // 60
-    start_minute = race_start_minutes % 60
-    race_time_str = f"{start_hour:02d}:{start_minute:02d}"
-    df = pd.DataFrame(data)
-    print(f"データ収集完了（未来日付モック）：{venue} {race_no}R / 種別:{venue_type} / 馬場状態: {track_condition} / 開催日:{race_date_str} / 発走:{race_time_str}")
-    return df, track_condition, race_date_str, race_time_str
-
-
 def fetch_race_data(venue="京都", race_no=11, target_date=None):
     """
     指定会場・レースの出馬表データをリアルタイム取得する。
@@ -316,14 +215,14 @@ def fetch_race_data(venue="京都", race_no=11, target_date=None):
     Returns:
         (df, track_condition, race_date_str, race_time_str)
     """
-    # 未来日付の場合はモックデータを返す（スクレイピングできないため）
+    # 未来日付の場合は未開催として空データを返す
     if target_date:
         try:
             target_dt = datetime.strptime(target_date, "%Y%m%d")
             today = datetime.now()
             if target_dt.date() > today.date():
-                # 未来のレースはモックデータを返す
-                return _generate_mock_data_with_date(venue, race_no, target_date)
+                print(f"[INFO] 未開催レース（未来日付）：{venue} {race_no}R / 日付:{target_date}")
+                return pd.DataFrame(), "不明", "不明", "不明"
         except ValueError:
             pass
 
@@ -350,7 +249,9 @@ def fetch_race_data(venue="京都", race_no=11, target_date=None):
                 print(f"データ収集完了（リアルタイム・スポーツナビ）：{venue} {race_no}R / race_id={race_id}")
                 return df, track_condition, race_date_str, race_time_str
 
-    return _generate_mock_data(venue, race_no)
+    # スクレイピング失敗時は空データを返す（モックデータは生成しない）
+    print(f"[WARN] データ取得失敗：{venue} {race_no}R / 空データを返却")
+    return pd.DataFrame(), "不明", "不明", "不明"
 
 
 def fetch_race_result(venue, race_no, target_date=None):

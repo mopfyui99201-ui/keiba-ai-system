@@ -263,25 +263,32 @@ def generate_professional_tickets(df_sorted, track_condition="良", venue="京�
     })
 
     strategy2_tickets = []
-    other_horses = [h["馬名"] for _, h in top_horses.iloc[4:7].iterrows()] if len(top_horses) > 4 else []
+    other_horses = [h for _, h in top_horses.iloc[4:7].iterrows()] if len(top_horses) > 4 else []
+
+    fav_umaban = fav_horse.get("馬番", 1)
+    anti_umaban = anti_horse.get("馬番", 2)
 
     for other in other_horses[:3]:
+        other_umaban = other.get("馬番", 0)
+        other_name = other.get("馬名", "不明")
         strategy2_tickets.append({
             "戦略": "ハイブリッド変化球",
             "券種": "三連単2軸マルチ",
-            "買い目": f"{fav_name}={anti_name}→{other}",
-            "フォーメーション": "1,2-3-other",
+            "買い目": f"{fav_name}={anti_name}→{other_name}",
+            "フォーメーション": f"{fav_umaban},{anti_umaban}-{other_umaban}",
             "期待値": round((fav_score + anti_score) * hole_odds * 0.3, 1),
             "投資比率": 8,
             "コメント": "◎○軸から穴馬へ。三連単の回収率を重視。"
         })
 
-    for target in [hole_name, conn_name]:
+    hole_umaban = hole_horse.get("馬番", 3)
+    conn_umaban = conn_horse.get("馬番", 4)
+    for target_umaban, target_name in [(hole_umaban, hole_name), (conn_umaban, conn_name)]:
         strategy2_tickets.append({
             "戦略": "ハイブリッド変化球",
             "券種": "馬連フォーメーション",
-            "買い目": f"{fav_name},{anti_name}-{target}",
-            "フォーメーション": "1,2-target",
+            "買い目": f"{fav_name},{anti_name}-{target_name}",
+            "フォーメーション": f"{fav_umaban},{anti_umaban}-{target_umaban}",
             "期待値": round((fav_score + anti_score) * hole_odds * 0.4, 1),
             "投資比率": 6,
             "コメント": "◎○から穴馬への馬連フォーメーション。"

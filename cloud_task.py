@@ -252,19 +252,9 @@ def export_web_data():
         history = load_predictions_history()
     except Exception:
         history = []
-    today = datetime.now().date()
+    # 全ての予想レコードをWeb表示用に出力（最新データを確実に反映）
     web_predictions = []
     for record in history:
-        if record.get("hit") is not None:
-            continue
-        target_date = record.get("target_date", None)
-        if target_date:
-            try:
-                target_dt = datetime.strptime(target_date, "%Y%m%d").date()
-                if target_dt < today:
-                    continue
-            except ValueError:
-                pass
         web_predictions.append(record)
     ensure_web_dir()
     with open(WEB_DATA_FILE, "w", encoding="utf-8") as f:

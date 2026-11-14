@@ -177,6 +177,16 @@ body {
     display: block;
 }
 
+/* レースセクション（タブ切り替え用） */
+.race-section {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+
+.race-section.active {
+    display: block;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -492,16 +502,29 @@ body {
     display: flex;
     gap: 6px;
     margin-bottom: 16px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     background: #1e293b;
     padding: 8px;
     border-radius: 10px;
     border: 1px solid #334155;
+    -webkit-overflow-scrolling: touch;
+}
+
+.main-nav::-webkit-scrollbar {
+    height: 6px;
+}
+.main-nav::-webkit-scrollbar-track {
+    background: #0f172a;
+    border-radius: 6px;
+}
+.main-nav::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 6px;
 }
 
 .nav-btn {
-    flex: 1;
-    padding: 10px 16px;
+    padding: 10px 14px;
     background: transparent;
     color: #94a3b8;
     border: none;
@@ -511,6 +534,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     white-space: nowrap;
+    min-width: 80px;
 }
 
 .nav-btn.active {

@@ -61,7 +61,15 @@ async function loadWebData() {
         document.getElementById("status-last-run").textContent = new Date().toLocaleString("ja-JP");
     } catch (e) {
         console.error("データ読み込みエラー:", e);
-        document.getElementById("last-updated").textContent = "データ取得失敗";
+        document.getElementById("last-updated").textContent = "データ取得に失敗しました";
+        document.getElementById("count-jra").textContent = "0 レース";
+        document.getElementById("count-nar").textContent = "0 レース";
+        document.getElementById("count-bankei").textContent = "0 レース";
+        document.getElementById("count-top").textContent = "0 レース";
+        document.getElementById("grid-jra").innerHTML = '<div class="empty-msg">データを取得できませんでした</div>';
+        document.getElementById("grid-nar").innerHTML = '<div class="empty-msg">データを取得できませんでした</div>';
+        document.getElementById("grid-bankei").innerHTML = '<div class="empty-msg">データを取得できませんでした</div>';
+        document.getElementById("grid-top").innerHTML = '<div class="empty-msg">データを取得できませんでした</div>';
     }
 }
 
