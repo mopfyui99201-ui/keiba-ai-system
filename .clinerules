@@ -1,0 +1,28 @@
+# keiba-elizabeth-app プロジェクト固有ルール
+# 親ディレクトリの土台ルール: /Users/m.kairi.c/cline-workspace/.clinerules を参照
+
+## 適用範囲
+- 本ファイルは /Users/m.kairi.c/cline-workspace/keiba-elizabeth-app/ 内の作業に適用
+- 共通ルールは親ディレクトリの .clinerules に準拠
+
+## プロジェクト固有設定
+- メインエントリ: app.py
+- 予測ロジック: predictor.py
+- スクレイピング: scraper.py
+- クラウドタスク: cloud_task.py
+- Webフロントエンド: index.html, auth.js, style.css
+- GitHub Actions: .github/workflows/keiba_pipeline.yml
+- データ出力先: data/（.gitignoreで除外、GitHub Actionsで生成）
+
+## ビルド・実行コマンド
+- 構文チェック: python -m py_compile app.py predictor.py scraper.py cloud_task.py
+- GUI起動テスト: python -c "import tkinter as tk; import app; root=tk.Tk(); app.KeibaApp(root); root.after(3000,root.quit); root.mainloop()"
+- Macアプリビルド: pyinstaller --windowed --clean app.py
+- クラウド予想実行: python cloud_task.py --mode predict
+- クラウド学習実行: python cloud_task.py --mode learn
+- フル実行: python cloud_task.py --mode full
+
+## Git操作
+- リモート: https://github.com/mopfyui99201-ui/keiba-ai-system.git
+- ブランチ: main
+- プッシュ: git add -A && git commit -m "メッセージ" && git push origin main
