@@ -78,6 +78,9 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
         if (["jra", "nar", "bankei", "top"].includes(section)) {
             filterBar.style.display = "flex";
             setupFilters(section);
+        } else if (section === "admin") {
+            filterBar.style.display = "none";
+            setupAdminTab();
         } else {
             filterBar.style.display = "none";
         }
@@ -239,4 +242,132 @@ function renderStatsTab(data) {
         </div>
     `;
 }
+}
+// ============================================================
+// 管理者メニュー ハンドラ
+// ============================================================
+
+function setupAdminTab() {
+    updateAdminStatus();
+    renderAdminWeights();
+    document.getElementById("btn-save-weights").onclick = saveWeights;
+    document.getElementById("btn-reset-weights").onclick = resetWeights;
+    document.getElementById("btn-export-history").onclick = exportHistory;
+    document.getElementById("btn-reset-history").onclick = resetHistory;
+}
+
+function updateAdminStatus() {
+    try {
+        const raceCount = allPredictions.length;
+        document.getElementById("status-race-count").textContent = raceCount + " レース";
+        document.getElementById("status-last-run").textContent = new Date().toLocaleString("ja-JP");
+        fetch("data/learning.json")
+            .then(res => res.json())
+            .then(data => {
+                if (data.updated_at) {
+                    document.getElementById("status-data-updated").textContent = data.updated_at;
+                }
+            })
+            .catch(() => {
+                document.getElementById("status-data-updated").textContent = "取得失敗";
+            });
+    } catch (e) {
+        console.error("ステータス更新エラー:", e);
+    }
+}
+
+function renderAdminWeights() {
+    const container = document.getElementById("admin-weights");
+    if (!container) return;
+    const weights = allWeights || {};
+    const venues = Object.keys(weights);
+    if (venues.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8;">重みデータがありません。</p>';
+        return;
+    }
+    let html = '<div class="admin-weights-editor" style="max-height:400px; overflow-y:auto; border:1px solid #334155; border-radius:6px; padding:12px; background:#0f172a;">';
+    venues.forEach(v => {
+        const w = weights[v] || {};
+        html += '<div class="weight-venue-block" style="margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #334155;">';
+        html += '<div class="weight-venue-name" style="color:#38bdf8; font-weight:bold; margin-bottom:8px; font-size:14px;">' + v + '</div>';
+        html += '<div class="weight-item-row" style="display:flex; flex-wrap:wrap; gap:8px;">';
+        Object.entries(w).forEach(([k, val]) => {
+            html += '<div class="weight-edit-item" style="display:flex; align-items:center; gap:6px; margin:4px 0;">';
+            html += '<span class="weight-name" style="color:#cbd5e1; font-size:12px; min-width:140px;">' + k + '</span>';
+            html += '<input type="number" class="weight-input" style="width:70px; padding:4px; background:#0f172a; color:#f8fafc; border:1px solid #475569; border-radius:4px;" data-venue="' + v + '" data-key="' + k + '" value="' + val + '">';
+            html += '</div>';
+        });
+        html += '</div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function saveWeights() {
+    const inputs = document.querySelectorAll(".weight-input");
+    const newWeights = {};
+    inputs.forEach(input => {
+        const venue = input.getAttribute("data-venue");
+        const key = input.getAttribute("data-key");
+        const val = parseFloat(input.value);
+        if (!newWeights[venue]) newWeights[venue] = {};
+        newWeights[venue][key] = isNaN(val) ? 0 : val;
+    });
+    const merged = { ...(allWeights || {}), ...newWeights };
+    const blob = new Blob([JSON.stringify(merged, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "venue_weights_" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert("重み設定をJSONファイルとしてダウンロードしました。\nGitHub Actions で data/ 以下に反映させる場合は、生成されたファイルをリポジトリにコミットしてプッシュしてください。");
+}
+
+function resetWeights() {
+    if (!confirm("AI重みをデフォルト値にリセットしますか？\nこの操作は元に戻せません。")) {
+        return;
+    }
+    allWeights = {};
+    document.getElementById("admin-weights").innerHTML = '<p style="color:#94a3b8;">重みデータがリセットされました。</p>';
+    alert("ブラウザ上の重みデータをクリアしました。ページを再読み込みするとサーバー側のデータが復元されます。");
+}
+
+function exportHistory() {
+    fetch("data/predictions.json")
+        .then(res => res.json())
+        .then(data => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "predictions_history_" + new Date().toISOString().slice(0, 10) + ".json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        })
+        .catch(e => {
+            console.error("エクスポートエラー:", e);
+            alert("履歴のエクスポートに失敗しました。");
+        });
+}
+
+function resetHistory() {
+    if (!confirm("予想履歴をリセットしますか？\nこの操作は元に戻せません。")) {
+        return;
+    }
+    allPredictions = [];
+    document.getElementById("grid-jra").innerHTML = '<div class="empty-msg">予想データがありません</div>';
+    document.getElementById("grid-nar").innerHTML = '<div class="empty-msg">予想データがありません</div>';
+    document.getElementById("grid-bankei").innerHTML = '<div class="empty-msg">予想データがありません</div>';
+    document.getElementById("grid-top").innerHTML = '<div class="empty-msg">予想データがありません</div>';
+    document.getElementById("count-jra").textContent = "0 レース";
+    document.getElementById("count-nar").textContent = "0 レース";
+    document.getElementById("count-bankei").textContent = "0 レース";
+    document.getElementById("count-top").textContent = "0 レース";
+    document.getElementById("status-race-count").textContent = "0 レース";
+    alert("ブラウザ上の予想履歴をクリアしました。ページを再読み込みするとサーバー側のデータが復元されます。");
 }
