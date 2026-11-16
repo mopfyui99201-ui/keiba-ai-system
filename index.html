@@ -1,128 +1,327 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>競馬AI予想システム - Elizabeth Web</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>競馬AI予想（閲覧用） - Elizabeth Web</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif; background: #0f172a; color: #f8fafc; line-height: 1.6; min-height: 100vh; padding: 16px; }
+.header { background: linear-gradient(135deg, #007acc 0%, #005a9e 100%); padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,122,204,0.3); }
+.header h1 { color: #fff; font-size: 22px; margin-bottom: 8px; }
+.header p { color: #bae6fd; font-size: 14px; }
+.link-section { background: #1e293b; padding: 16px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
+.link-section h2 { color: #38bdf8; font-size: 16px; margin-bottom: 12px; }
+.link-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.link-btn { display: block; padding: 10px 14px; background: #0f172a; color: #f8fafc; text-decoration: none; border-radius: 6px; border: 1px solid #475569; font-size: 13px; text-align: center; transition: all 0.2s; }
+.link-btn:hover { background: #007acc; border-color: #007acc; color: #fff; }
+.accordion { max-width: 800px; margin: 0 auto 20px; }
+.accordion-item { background: #1e293b; border: 1px solid #334155; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+.accordion-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 15px; transition: background 0.2s; }
+.accordion-header:hover { background: #334155; }
+.accordion-header.active { background: #007acc; color: #fff; }
+.accordion-toggle { font-size: 18px; }
+.accordion-content { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #0f172a; }
+.accordion-content.open { max-height: 1000px; padding: 16px; }
+.fav-btn { background: none; border: none; color: #fbbf24; cursor: pointer; font-size: 16px; padding: 4px; }
+.fav-btn.active { color: #f59e0b; }
+.venue-detail { display: none; padding: 12px; border-top: 1px solid #334155; }
+.venue-detail.show { display: block; }
+.venue-meta { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; color: #94a3b8; }
+.venue-meta span { background: #334155; padding: 4px 8px; border-radius: 4px; }
+.memo-section { margin-top: 12px; }
+.memo-section h4 { color: #38bdf8; font-size: 14px; margin-bottom: 8px; }
+.memo-text { background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px; font-size: 13px; color: #cbd5e1; margin-bottom: 8px; min-height: 40px; }
+.memo-inputs { display: flex; gap: 8px; margin-bottom: 8px; }
+.memo-inputs input, .memo-inputs button { padding: 6px 10px; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 12px; }
+.memo-inputs button { background: #007acc; color: #fff; cursor: pointer; }
+.memo-inputs button:hover { background: #005a9e; }
+.del-btn { background: #dc2626 !important; }
+.del-btn:hover { background: #b91c1c !important; }
+</style>
+
+.predict-section { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
+.predict-section h2 { color: #38bdf8; font-size: 18px; margin-bottom: 16px; }
+.textarea-wrap { margin-bottom: 16px; }
+.textarea-wrap label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+textarea { width: 100%; min-height: 120px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px; color: #f8fafc; font-family: monospace; font-size: 13px; resize: vertical; }
+.btn-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.btn { padding: 10px 18px; border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.btn-primary { background: #007acc; }
+.btn-primary:hover { background: #005a9e; }
+.btn-success { background: #28a745; }
+.btn-success:hover { background: #1e7e34; }
+.btn-copy { background: #6366f1; }
+.btn-copy:hover { background: #4f46e5; }
+.result-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-top: 16px; display: none; }
+.result-card.show { display: block; }
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.result-item { background: #1e293b; padding: 10px; border-radius: 6px; text-align: center; }
+.result-item .label { font-size: 11px; color: #94a3b8; }
+.result-item .value { font-size: 16px; font-weight: bold; color: #f8fafc; margin-top: 4px; }
+.ticket-list { margin-top: 12px; }
+.ticket-item { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.ticket-num { font-family: monospace; font-weight: bold; color: #fbbf24; }
+.ticket-exp { color: #22d3ee; font-size: 11px; background: rgba(34,211,238,0.1); padding: 2px 6px; border-radius: 4px; }
+.star { color: #fbbf24; }
+.stats-section { background: #1e293b; padding: 16px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.stats-section h2 { color: #38bdf8; font-size: 16px; margin-bottom: 12px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stat-item { background: #0f172a; padding: 10px; border-radius: 6px; text-align: center; }
+.stat-item .label { font-size: 11px; color: #94a3b8; }
+.stat-item .value { font-size: 18px; font-weight: bold; color: #f8fafc; }
+.result-input { margin-top: 12px; padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; display: none; }
+.result-input.show { display: block; }
+.result-input label { font-size: 12px; color: #94a3b8; margin-right: 8px; }
+.result-input input { width: 40px; padding: 6px; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; text-align: center; }
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .link-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
 </head>
 <body>
-    <!-- 認証オーバーレイ -->
-    <div id="auth-overlay" class="auth-overlay active">
-        <div class="auth-card">
-            <h1>🔐 競馬AI予想システム</h1>
-            <p>暗証番号を入力してください</p>
-            <input type="password" id="password-input" placeholder="パスワードを入力">
-            <button id="auth-btn" class="auth-btn">ログイン</button>
-            <div id="auth-error" class="auth-error"></div>
-        </div>
-    </div>
 
-    <!-- メインコンテンツ（認証後表示） -->
-    <div id="main-content" class="main-content" style="display: none;">
-        <header class="app-header">
-            <h1>🏇 競馬AI予想システム - Elizabeth Web</h1>
-            <div class="header-info" id="header-info">
-                最終更新: <span id="last-updated">-</span>
-            </div>
-        </header>
+<div class="header">
+  <h1>🏇 競馬AI予想（閲覧用）</h1>
+  <p>Elizabeth Web - 全国競馬場対応・アコーディオンUI</p>
+</div>
 
-        <!-- メニューバー -->
-        <nav class="main-nav">
-            <button class="nav-btn active" data-section="jra">🏇 中央競馬（JRA）</button>
-            <button class="nav-btn" data-section="nar">🏁 地方競馬（NAR）</button>
-            <button class="nav-btn" data-section="bankei">🐴 ばんえい競馬（帯広）</button>
-            <button class="nav-btn" data-section="top">⭐ ★4以上（高期待値）</button>
-            <button class="nav-btn" data-section="stats">📊 成績・学習ログ</button>
-            <button class="nav-btn admin-btn" data-section="admin">⚙️ 管理者メニュー</button>
-        </nav>
+<div class="link-section">
+  <h2>🔗 主要競馬サイト</h2>
+  <div class="link-grid">
+    <a href="https://www.jra.go.jp/" class="link-btn" target="_blank">JRA公式</a>
+    <a href="https://www.netkeiba.com/" class="link-btn" target="_blank">netkeiba中央</a>
+    <a href="https://www.netkeiba.com/nar/" class="link-btn" target="_blank">netkeiba地方</a>
+    <a href="https://www.banei10.jp/" class="link-btn" target="_blank">ばんえい十勝</a>
+    <a href="https://race.rakuten-keiba.jp/" class="link-btn" target="_blank">楽天競馬</a>
+  </div>
+</div>
 
-        <!-- 絞り込みフィルター -->
-        <div class="filter-bar" id="filter-bar" style="display: none;">
-            <label>会場: <select id="filter-venue"><option value="">全会場</option></select></label>
-            <label>日付: <select id="filter-date"><option value="">全日付</option></select></label>
-            <button id="filter-reset" class="btn-reset">リセット</button>
-        </div>
+<div class="accordion" id="venue-accordion"></div>
 
-        <!-- セクション：中央競馬 -->
-        <section id="section-jra" class="race-section active">
-            <div class="section-header">
-                <h2>🏇 中央競馬（JRA）予想一覧</h2>
-                <span class="badge" id="count-jra">0 レース</span>
-            </div>
-            <div class="card-grid" id="grid-jra"></div>
-        </section>
+<div class="predict-section">
+  <h2>🤖 手動コピペAI学習＆予想エンジン</h2>
+  <div class="textarea-wrap">
+    <label>出馬表・オッズ・馬場情報を貼り付け（ネットからコピーしたテキスト）</label>
+    <textarea id="paste-data" placeholder="例：1R 馬名 オッズ 人気 ..."></textarea>
+  </div>
+  <div class="textarea-wrap">
+    <label>この競馬場の攻略メモ・特徴（任意）</label>
+    <textarea id="venue-memo" placeholder="例：内枠有利、逃げ決まりやすい、重馬場でディープ系強し..."></textarea>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btn-predict">📋 クリップボードから貼り付けて即予想</button>
+    <button class="btn btn-copy" id="btn-copy-tickets">📋 買い目をコピー</button>
+  </div>
+  <div class="result-card" id="result-card">
+    <div class="result-grid" id="result-grid"></div>
+    <div class="ticket-list" id="ticket-list"></div>
+  </div>
+  <div class="result-input" id="result-input">
+    <label>着順入力（1着〜3着の馬番）:</label>
+    <input type="text" id="input-1st" placeholder="1着">
+    <input type="text" id="input-2nd" placeholder="2着">
+    <input type="text" id="input-3rd" placeholder="3着">
+    <button class="btn btn-success" id="btn-save-result" style="margin-left:8px;">記録</button>
+  </div>
+</div>
 
-        <!-- セクション：地方競馬 -->
-        <section id="section-nar" class="race-section">
-            <div class="section-header">
-                <h2>🏁 地方競馬（NAR）予想一覧</h2>
-                <span class="badge" id="count-nar">0 レース</span>
-            </div>
-            <div class="card-grid" id="grid-nar"></div>
-        </section>
-
-        <!-- セクション：ばんえい -->
-        <section id="section-bankei" class="race-section">
-            <div class="section-header">
-                <h2>🐴 ばんえい競馬（帯広）予想一覧</h2>
-                <span class="badge" id="count-bankei">0 レース</span>
-            </div>
-            <div class="card-grid" id="grid-bankei"></div>
-        </section>
-
-        <!-- セクション：★4以上 -->
-        <section id="section-top" class="race-section">
-            <div class="section-header">
-                <h2>⭐ ★4以上（高期待値ピックアップ）</h2>
-                <span class="badge" id="count-top">0 レース</span>
-            </div>
-            <div class="card-grid" id="grid-top"></div>
-        </section>
-
-        <!-- セクション：成績・学習ログ -->
-        <section id="section-stats" class="race-section">
-            <div class="section-header">
-                <h2>📊 成績・学習ログ</h2>
-                <span class="badge" id="count-stats">0 会場</span>
-            </div>
-            <div class="stats-grid" id="grid-stats"></div>
-            <div class="learning-log" id="log-stats"></div>
-        </section>
-
-        <!-- セクション：管理者メニュー -->
-        <section id="section-admin" class="race-section admin-section">
-            <div class="section-header">
-                <h2>⚙️ 管理者メニュー</h2>
-                <span class="badge admin-badge">管理者専用</span>
-            </div>
-            <div class="admin-grid">
-                <div class="admin-card">
-                    <h3>📊 システムステータス</h3>
-                    <div class="status-item"><span>最終実行:</span><span id="status-last-run">-</span></div>
-                    <div class="status-item"><span>取得レース数:</span><span id="status-race-count">-</span></div>
-                    <div class="status-item"><span>データ更新:</span><span id="status-data-updated">-</span></div>
-                </div>
-                <div class="admin-card">
-                    <h3>🎯 AI重み付け設定</h3>
-                    <div id="admin-weights"></div>
-                    <div class="admin-btn-group" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn-save-weights" id="btn-save-weights" style="flex:1; min-width:120px;">💾 重みを保存(JSONダウンロード)</button>
-                        <button class="btn-reset-weights" id="btn-reset-weights">⚠️ 重みをリセット</button>
-                    </div>
-                </div>
-                <div class="admin-card">
-                    <h3>🔧 操作</h3>
-                    <div class="admin-links">
-                        <a href="https://github.com/mopfyui99201-ui/keiba-ai-system/actions" target="_blank" class="admin-link">🚀 GitHub Actions手動実行</a>
-                        <button class="admin-link" id="btn-export-history">📤 履歴エクスポート</button>
-                        <button class="admin-link" id="btn-reset-history">🗑️ 履歴リセット</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <script src="auth.js"></script>
+<div class="stats-section">
+  <h2>📊 的中・回収率ミニ成績表</h2>
+  <div class="stats-grid">
+    <div class="stat-item"><div class="label">的中率</div><div class="value" id="stat-hit-rate">0%</div></div>
+    <div class="stat-item"><div class="label">回収率</div><div class="value" id="stat-return-rate">0%</div></div>
+    <div class="stat-item"><div class="label">総投資</div><div class="value" id="stat-invest">0円</div></div>
+    <div class="stat-item"><div class="label">総払戻</div><div class="value" id="stat-payout">0円</div></div>
+  </div>
+<script>
+const JRA_VENUES = ["東京","中山","京都","阪神","中京","新潟","福島","小倉","函館","札幌"];
+const NAR_VENUES = ["大井","川崎","船橋","浦和","門別","帯広(ばんえい)","盛岡","水沢","金沢","笠松","名古屋","園田","姫路","高知","佐賀"];
+const VENUE_CHAR = {
+  "東京":"芝外回り・直線長・実力反映","中山":"芝内回り・急坂・内枠有利","京都":"芝外回り・平坦・スタミナ重視","阪神":"芝外回り・平坦・スピード重視","中京":"芝外回り・外枠有利傾向",
+  "新潟":"芝外回り・差し有利","福島":"芝・ダート・小回り・内枠有利","小倉":"芝・ダート・平坦・逃げ有利","函館":"芝・ダート・小回り・内枠・先行有利","札幌":"芝・ダート・小回り・内枠・先行有利",
+  "大井":"直線長・フラット","川崎":"きついカーブ・内枠先行","船橋":"小回り・内枠先行","浦和":"小回り・内枠先行","門別":"道営・砂・内枠先行","帯広(ばんえい)":"パワー・馬場水分量重視","盛岡":"道営・砂・内枠先行","水沢":"道営・砂・内枠先行",
+  "金沢":"砂・内枠先行","笠松":"砂・内枠先行","名古屋":"砂・内枠先行","園田":"砂・内枠先行","姫路":"砂・内枠先行","高知":"砂・内枠先行","佐賀":"砂・内枠先行"
+};
+const G1_EVENTS = [
+  {name:"桜花賞", venue:"阪神", date:"4月"},{name:"皐月賞", venue:"中山", date:"4月"},{name:"天皇賞(春)", venue:"京都", date:"5月"},
+  {name:"日本ダービー", venue:"東京", date:"5月"},{name:"オークス", venue:"東京", date:"5月"},{name:"安田記念", venue:"東京", date:"6月"},
+  {name:"宝塚記念", venue:"阪神", date:"6月"},{name:"スプリンターズS", venue:"中山", date:"10月"},{name:"秋華賞", venue:"京都", date:"10月"},
+  {name:"菊花賞", venue:"京都", date:"10月"},{name:"天皇賞(秋)", venue:"東京", date:"10月"},{name:"エリザベス女王杯", venue:"京都", date:"11月"},
+  {name:"マイルCS", venue:"京都", date:"11月"},{name:"ジャパンC", venue:"東京", date:"11月"},{name:"チャンピオンズC", venue:"中京", date:"12月"},
+  {name:"有馬記念", venue:"中山", date:"12月"},{name:"ホープフルS", venue:"中山", date:"12月"}
+];
+let venueData = JSON.parse(localStorage.getItem('keiba_venue_data') || '{}');
+let predictionsHistory = JSON.parse(localStorage.getItem('keiba_predictions') || '[]');
+const accordion = document.getElementById('venue-accordion');
+function addSection(title, items, type) {
+  const section = document.createElement('div');
+  section.className = 'accordion-item';
+  section.innerHTML = '<div class="accordion-header" onclick="toggleAccordion(this)"><span>' + title + '</span><span class="accordion-toggle">▼</span></div><div class="accordion-content" id="content-' + type + '"><div class="venue-grid" id="grid-' + type + '"></div></div>';
+  accordion.appendChild(section);
+  const grid = section.querySelector('#grid-' + type);
+  items.forEach(function(v) {
+    const fav = venueData[v] && venueData[v].favorite ? 'active' : '';
+    const memo = venueData[v] && venueData[v].memo ? venueData[v].memo : '';
+    const char = VENUE_CHAR[v] || '';
+    const item = document.createElement('div');
+    item.className = 'venue-detail';
+    item.id = 'detail-' + v;
+    item.innerHTML = '<div class="venue-meta"><span>' + type + '</span><span>' + char + '</span></div><div class="memo-section"><h4>📝 攻略メモ・特徴</h4><div class="memo-text" id="memo-text-' + v + '">' + memo + '</div><div class="memo-inputs"><input type="text" id="memo-input-' + v + '" placeholder="メモを追加..."><button onclick="saveMemo(\'' + v + '\')" class="btn">保存</button><button onclick="deleteMemo(\'' + v + '\')" class="btn del-btn">削除</button></div></div>';
+    const header = document.createElement('div');
+    header.className = 'accordion-header';
+    header.innerHTML = '<span>' + v + ' ' + (fav ? '★' : '☆') + '</span><span class="accordion-toggle">▼</span>';
+    header.onclick = function(e) { e.stopPropagation(); toggleVenueDetail(item, header); };
+    header.querySelector('.accordion-toggle').onclick = function(e) { e.stopPropagation(); toggleVenueDetail(item, header); };
+    const favBtn = document.createElement('span');
+    favBtn.className = 'fav-btn ' + fav;
+    favBtn.textContent = '★';
+    favBtn.title = 'お気に入り';
+    favBtn.onclick = function(e) { e.stopPropagation(); toggleFavorite(v, favBtn); };
+    header.appendChild(favBtn);
+    grid.appendChild(header);
+    grid.appendChild(item);
+  });
+}
+function toggleAccordion(header) {
+  const content = header.nextElementSibling;
+  const toggle = header.querySelector('.accordion-toggle');
+  const isOpen = content.classList.contains('open');
+  document.querySelectorAll('.accordion-content.open').forEach(function(c) {
+    c.classList.remove('open');
+    c.style.maxHeight = '0';
+    c.previousElementSibling.classList.remove('active');
+    c.previousElementSibling.querySelector('.accordion-toggle').textContent = '▼';
+  });
+  if (!isOpen) {
+    content.classList.add('open');
+    content.style.maxHeight = '1000px';
+    header.classList.add('active');
+    toggle.textContent = '▲';
+  }
+}
+function toggleVenueDetail(detail, header) {
+  const isOpen = detail.classList.contains('show');
+  document.querySelectorAll('.venue-detail.show').forEach(function(d) {
+    d.classList.remove('show');
+    d.previousElementSibling.querySelector('.accordion-toggle').textContent = '▼';
+  });
+  if (!isOpen) {
+    detail.classList.add('show');
+    header.querySelector('.accordion-toggle').textContent = '▲';
+  }
+}
+function toggleFavorite(v, btn) {
+  if (!venueData[v]) venueData[v] = {};
+  venueData[v].favorite = !venueData[v].favorite;
+  localStorage.setItem('keiba_venue_data', JSON.stringify(venueData));
+  btn.classList.toggle('active');
+  buildVenues();
+}
+function saveMemo(v) {
+  const input = document.getElementById('memo-input-' + v);
+  if (!venueData[v]) venueData[v] = {};
+  venueData[v].memo = input.value || '';
+  localStorage.setItem('keiba_venue_data', JSON.stringify(venueData));
+  document.getElementById('memo-text-' + v).textContent = venueData[v].memo || '';
+  input.value = '';
+}
+function deleteMemo(v) {
+  if (!venueData[v]) return;
+  venueData[v].memo = '';
+  localStorage.setItem('keiba_venue_data', JSON.stringify(venueData));
+  document.getElementById('memo-text-' + v).textContent = '';
+}
+function buildVenues() {
+  accordion.innerHTML = '';
+  const favs = JRA_VENUES.concat(NAR_VENUES).filter(function(v) { return venueData[v] && venueData[v].favorite; });
+  const others = JRA_VENUES.concat(NAR_VENUES).filter(function(v) { return !(venueData[v] && venueData[v].favorite); });
+  if (favs.length > 0) addSection('⭐ お気に入り', favs, 'fav');
+  addSection('🏇 中央競馬（JRA）', JRA_VENUES, 'jra');
+  addSection('🏁 地方競馬（NAR）', NAR_VENUES, 'nar');
+  addSection('🏆 主要G1・重賞イベント', G1_EVENTS.map(function(e) { return e.name + '（' + e.venue + '・' + e.date + '）'; }), 'g1');
+}
+buildVenues();
+document.getElementById('btn-predict').onclick = function() {
+  const raw = document.getElementById('paste-data').value.trim();
+  if (!raw) { alert('データを貼り付けてください'); return; }
+  const lines = raw.split('\n').filter(function(l) { return l.trim(); });
+  const horses = [];
+  lines.forEach(function(line) {
+    const nums = line.match(/\d+/g);
+    if (nums && nums.length >= 2) {
+      const umaban = parseInt(nums[0]);
+      const name = line.replace(/^\d+\s*/, '').replace(/\d[\d.,]*\s*$/, '').trim() || '不明';
+      const odds = parseFloat(nums[nums.length-1]) || 5.0;
+      if (umaban > 0 && umaban <= 18) horses.push({umaban: umaban, name: name, odds: odds});
+    }
+  });
+  if (horses.length === 0) { alert('解析できませんでした'); return; }
+  horses.sort(function(a, b) { return a.odds - b.odds; });
+  const top3 = horses.slice(0, 3);
+  const resultGrid = document.getElementById('result-grid');
+  const ticketList = document.getElementById('ticket-list');
+  resultGrid.innerHTML = '';
+  ticketList.innerHTML = '';
+  const card = document.getElementById('result-card');
+  card.classList.add('show');
+  const favOdds = top3[0].odds;
+  const expValue = Math.round((1/favOdds) * 1000) / 10;
+  const investRate = [40, 30, 20];
+  top3.forEach(function(h, i) {
+    const item = document.createElement('div');
+    item.className = 'result-item';
+    const star = i === 0 ? '★★★★★' : i === 1 ? '★★★★☆' : '★★★☆☆';
+    item.innerHTML = '<div class="label">' + h.umaban + '番 ' + h.name + '</div><div class="value">' + star + '</div><div class="label">オッズ ' + h.odds + '</div>';
+    resultGrid.appendChild(item);
+    const tItem = document.createElement('div');
+    tItem.className = 'ticket-item';
+    const formation = i === 0 ? (top3[0].umaban + '-' + top3[1].umaban) : i === 1 ? (top3[0].umaban + '-' + top3[2].umaban) : (top3[0].umaban + ',' + top3[1].umaban + '-' + top3[2].umaban);
+    tItem.innerHTML = '<span class="ticket-num">' + formation + '</span><span class="ticket-exp">期待値:' + expValue + ' 投資:' + investRate[i] + '% AI:' + Math.round(90 - i * 10) + '%</span><span class="star">' + star + '</span>';
+    ticketList.appendChild(tItem);
+  });
+  document.getElementById('result-input').classList.add('show');
+  window.lastTickets = Array.from(ticketList.children).map(function(t) { return t.querySelector('.ticket-num').textContent; }).join(', ');
+};
+document.getElementById('btn-copy-tickets').onclick = function() {
+  if (!window.lastTickets) { alert('買い目がありません'); return; }
+  navigator.clipboard.writeText(window.lastTickets).then(function() { alert('コピーしました: ' + window.lastTickets); });
+};
+document.getElementById('btn-save-result').onclick = function() {
+  const r1 = document.getElementById('input-1st').value.trim();
+  const r2 = document.getElementById('input-2nd').value.trim();
+  const r3 = document.getElementById('input-3rd').value.trim();
+  if (!r1 || !r2 || !r3) { alert('1〜3着を入力してください'); return; }
+  const record = {date: new Date().toISOString(), 1st: r1, 2nd: r2, 3rd: r3, tickets: window.lastTickets || ''};
+  predictionsHistory.push(record);
+  localStorage.setItem('keiba_predictions', JSON.stringify(predictionsHistory));
+  updateStats();
+  document.getElementById('input-1st').value = '';
+  document.getElementById('input-2nd').value = '';
+  document.getElementById('input-3rd').value = '';
+  alert('記録を保存しました');
+};
+function updateStats() {
+  const total = predictionsHistory.length;
+  if (total === 0) return;
+  let hits = 0, invest = 0, payout = 0;
+  predictionsHistory.forEach(function(r) {
+    const nums = r.tickets.match(/\d+/g) || [];
+    if (nums.includes(r.1st)) hits++;
+    invest += 100;
+    payout += nums.includes(r.1st) ? 300 : 0;
+  });
+  const hitRate = Math.round(hits / total * 100);
+  const returnRate = total > 0 ? Math.round(payout / invest * 100) : 0;
+  document.getElementById('stat-hit-rate').textContent = hitRate + '%';
+  document.getElementById('stat-return-rate').textContent = returnRate + '%';
+  document.getElementById('stat-invest').textContent = invest + '円';
+  document.getElementById('stat-payout').textContent = payout + '円';
+}
+updateStats();
+</script>
 </body>
 </html>
+</div>

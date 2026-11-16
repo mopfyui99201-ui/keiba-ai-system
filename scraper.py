@@ -1,13 +1,13 @@
 """
-scraper.py - 競馬データスクレイピングモジュール（本番リアルタイム版 - スポーツナビ対応）
+scraper.py - 競馬データスクレイピングモジュール（本番リアルタイム版 - netkeiba.comモバイル対応）
 全国25競馬場（中央10場＋地方15場）に対応。
-スポーツナビ競馬から実際の出馬表・オッズ・着順をリアルタイムスクレイピング。
-取得失敗時はモックデータにフォールバック。
+netkeiba.com モバイル版から実際の出馬表・オッズ・着順をリアルタイムスクレイピング。
+取得失敗時は空データを返す（モックデータは生成しない）。
 """
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import random
+import time
 from datetime import datetime, timedelta
 import re
 
@@ -23,39 +23,37 @@ NAR_VENUES = [
 ]
 ALL_VENUES = JRA_VENUES + NAR_VENUES
 
-NETKEIBA_JRA_CODE = {
+# netkeiba.com モバイル版 競馬場ID
+NETKEIBA_MOBILE_VENUE_ID = {
     "東京": "05", "中山": "06", "京都": "07", "阪神": "08", "中京": "09",
     "新潟": "10", "福島": "11", "小倉": "12", "函館": "13", "札幌": "14",
+    "大井": "21", "川崎": "22", "船橋": "23", "浦和": "24", "門別": "25",
+    "帯広(ばんえい)": "26", "盛岡": "27", "水沢": "28",
+    "金沢": "31", "笠松": "32", "名古屋": "33",
+    "園田": "34", "姫路": "35", "高知": "36", "佐賀": "37",
 }
 
-# スポーツナビ競馬 競馬場コードマッピング
-SPONAVI_JRA_CODE = {
-    "東京": "tokyo", "中山": "nakayama", "京都": "kyoto", "阪神": "hanshin", "中京": "chukyo",
-    "新潟": "niigata", "福島": "fukushima", "小倉": "kokura", "函館": "hakodate", "札幌": "sapporo",
-}
-SPONAVI_NAR_CODE = {
-    "大井": "ooi", "川崎": "kawasaki", "船橋": "funabashi", "浦和": "urawa", "門別": "monbetsu",
-    "帯広(ばんえい)": "obihiro", "盛岡": "morioka", "水沢": "mizusawa",
-    "金沢": "kanazawa", "笠松": "kasamatsu", "名古屋": "nagoya",
-    "園田": "sonoda", "姫路": "himeji", "高知": "kochi", "佐賀": "saga",
-}
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+MOBILE_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
+    "Connection": "keep-alive",
+    "Referer": "https://race.sp.netkeiba.com/",
 }
 
-REQUEST_TIMEOUT = 5
+REQUEST_TIMEOUT = 15
+REQUEST_INTERVAL = 1.5
+
+
+def _sleep():
+    time.sleep(REQUEST_INTERVAL)
 
 
 def is_nar_venue(venue):
-    """NAR（地方競馬）かどうかを判定"""
     return venue in NAR_VENUES
 
 
 def get_venue_type(venue):
-    """競馬場の種別を返す"""
     if venue in NAR_VENUES:
         return "地方競馬(NAR)"
     elif venue in JRA_VENUES:
@@ -64,9 +62,6 @@ def get_venue_type(venue):
         return "不明"
 
 
-# ============================================================
-# 特殊競馬・コース特性定義
-# ============================================================
 VENUE_CHARACTERISTICS = {
     "東京": "📊コース特性：芝コース・外回り・直線長・実力反映",
     "中山": "📊コース特性：芝コース・内回り・急坂・内枠有利",
@@ -97,222 +92,203 @@ VENUE_CHARACTERISTICS = {
 
 
 def get_venue_characteristic(venue):
-    """競馬場の特性テキストを返す"""
     return VENUE_CHARACTERISTICS.get(venue, "📊コース特性：情報なし")
 
-
-def _fetch_sponavi_race_list(venue, race_date=None):
-    if venue in SPONAVI_JRA_CODE:
-        venue_code = SPONAVI_JRA_CODE[venue]
-    elif venue in SPONAVI_NAR_CODE:
-        venue_code = SPONAVI_NAR_CODE[venue]
-    else:
+def _fetch_netkeiba_race_list(venue, race_date=None):
+    """netkeiba.com モバイル版からレース一覧（race_idリスト）を取得"""
+    if venue not in NETKEIBA_MOBILE_VENUE_ID:
         return []
     if race_date is None:
         race_date = datetime.now().strftime("%Y%m%d")
-    url = f"https://race.sportsnavi.com/keiba/{venue_code}/race_list.html?date={race_date}"
+    venue_id = NETKEIBA_MOBILE_VENUE_ID[venue]
+    url = f"https://race.sp.netkeiba.com/?pid=race_list&date={race_date}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        _sleep()
+        resp = requests.get(url, headers=MOBILE_HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
-        soup = BeautifulSoup(resp.content, "html.parser")
-        race_links = []
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            if "/keiba/" in href and ("race" in href or "shutuba" in href or "result" in href):
-                m = re.search(r'(\d{12,})', href)
-                if m:
-                    race_id = m.group(1)
-                    if race_id not in race_links:
-                        race_links.append(race_id)
-        if race_links:
-            print(f"[INFO] スポーツナビ レース一覧取得成功：{venue} / {len(race_links)}レース")
-            return race_links[:12]
+        html = resp.text
+        # 該当会場の race_id を抽出（race_id = 年4 + 会場2 + 回2 + 日2 + レース2 = 12桁）
+        venue_prefix = race_date[:4] + venue_id
+        pattern = venue_prefix + r'\d{6}'
+        race_ids = re.findall(pattern, html)
+        if race_ids:
+            race_ids = sorted(set(race_ids))
+            print(f"[INFO] netkeiba.comモバイル レース一覧取得成功：{venue} / {race_date} / {len(race_ids)}レース")
+            return race_ids
+        print(f"[WARN] netkeiba.comモバイル レース一覧から race_id 抽出失敗：{venue} / {race_date}")
+        return []
     except Exception as e:
-        print(f"[WARN] スポーツナビ レース一覧取得失敗 ({venue}): {e}")
-    return []
+        print(f"[WARN] netkeiba.comモバイル レース一覧取得失敗：{venue} / {race_date} / {e}")
+        return []
 
-def _parse_sponavi_shutuba(race_id):
-    url = f"https://race.sportsnavi.com/keiba/race/{race_id}/shutuba.html"
+
+def _parse_netkeiba_shutuba(race_id):
+    """netkeiba.com モバイル版から出馬表をパース"""
+    url = f"https://race.sp.netkeiba.com/?pid=shutuba&race_id={race_id}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        _sleep()
+        resp = requests.get(url, headers=MOBILE_HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, "html.parser")
         horses = []
-        for tr in soup.find_all("tr"):
-            cells = tr.find_all(["td", "th"])
-            if len(cells) < 8:
-                continue
-            cell_texts = [c.get_text(strip=True) for c in cells]
-            try:
-                waku_text = cell_texts[0] if len(cell_texts) > 0 else ""
-                umaban_text = cell_texts[1] if len(cell_texts) > 1 else ""
-                uma_name = cell_texts[2] if len(cell_texts) > 2 else "不明"
-                waku = int(re.sub(r'\D', '', waku_text)) if re.search(r'\d', waku_text) else 0
-                umaban = int(re.sub(r'\D', '', umaban_text)) if re.search(r'\d', umaban_text) else 0
+        tables = soup.find_all("table")
+        # 出馬表テーブルは2番目（Table 1）にあることが多い
+        for table in tables:
+            rows = table.find_all("tr")
+            for tr in rows:
+                cells = tr.find_all(["td", "th"])
+                if len(cells) < 3:
+                    continue
+                cell_texts = [c.get_text(strip=True) for c in cells]
+                # 馬番列が数字で始まる行を探す
+                if not cell_texts[0].isdigit():
+                    continue
+                umaban = int(cell_texts[0])
+                if umaban == 0:
+                    continue
+                # 馬名・性齢・騎手・斤量が混ざった列（インデックス2）
+                horse_info = cell_texts[2] if len(cell_texts) > 2 else ""
+                # 馬名を抽出（「馬名牡2騎手斤量」の形式から馬名部分を分離）
+                uma_name = "不明"
+                jockey = "不明"
+                m = re.match(r'(.+?)(牡|牝|騸)\d+(.+?)(\d+\.?\d*)', horse_info)
+                if m:
+                    uma_name = m.group(1).strip()
+                    jockey = m.group(3).strip()
+                elif horse_info:
+                    uma_name = horse_info[:10] if len(horse_info) > 10 else horse_info
+                # オッズ・人気を抽出（後ろの列から）
                 odds = 5.0
+                ninki = 9
                 for i in range(len(cell_texts) - 1, -1, -1):
                     t = cell_texts[i]
                     if re.match(r'^\d+\.?\d*$', t.replace(',', '')):
                         odds = float(t.replace(',', ''))
                         break
-                jockey = "不明"
-                for t in cell_texts:
-                    if re.match(r'^[a-zA-Zぁ-んァ-ン一-龯・\s]{2,10}$', t) and t not in ["不明", ""]:
-                        jockey = t
-                        break
+                # 枠番を推定（馬番から）
+                waku = ((umaban - 1) // 2) + 1
                 horses.append({
                     "枠番": waku, "馬番": umaban, "馬名": uma_name,
                     "前走脚質": "不明", "前走着順": 0, "前走上がり": 0.0,
                     "展開不利": 0, "血統系統": "不明",
-                    "オッズ": round(odds, 1), "人気": 9,
+                    "オッズ": round(odds, 1), "人気": ninki,
                     "持ちタイム": 0.0, "騎手勝率": 0.0, "コース適性": 50,
                     "騎手名": jockey, "持ちタイム単位": "秒",
                 })
-            except (ValueError, IndexError):
-                continue
+            if horses:
+                break
         if horses:
-            print(f"[INFO] スポーツナビ 出馬表パース成功：race_id={race_id} / {len(horses)}頭")
+            print(f"[INFO] netkeiba.comモバイル 出馬表パース成功：race_id={race_id} / {len(horses)}頭")
             return horses
     except Exception as e:
-        print(f"[WARN] スポーツナビ 出馬表パース失敗 (race_id={race_id}): {e}")
+        print(f"[WARN] netkeiba.comモバイル 出馬表パース失敗 (race_id={race_id}): {e}")
     return []
 
-
-def _parse_sponavi_result(race_id):
-    url = f"https://race.sportsnavi.com/keiba/race/{race_id}/result.html"
+def _parse_netkeiba_result(race_id):
+    """netkeiba.com モバイル版からレース結果をパース"""
+    url = f"https://race.sp.netkeiba.com/?pid=race_result&race_id={race_id}"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        _sleep()
+        resp = requests.get(url, headers=MOBILE_HEADERS, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, "html.parser")
         result = []
-        for tr in soup.find_all("tr"):
-            cells = tr.find_all(["td", "th"])
-            cell_texts = [c.get_text(strip=True) for c in cells]
-            if len(cell_texts) >= 2 and cell_texts[0].isdigit():
-                rank = int(cell_texts[0])
-                if rank <= 3:
-                    uma_name = cell_texts[1] if len(cell_texts) > 1 else "不明"
-                    umaban_text = cell_texts[2] if len(cell_texts) > 2 else "0"
-                    umaban = int(re.sub(r'\D', '', umaban_text)) if re.search(r'\d', umaban_text) else 0
-                    result.append({"着順": rank, "馬名": uma_name, "馬番": umaban})
+        tables = soup.find_all("table")
+        for table in tables:
+            rows = table.find_all("tr")
+            for tr in rows:
+                cells = tr.find_all(["td", "th"])
+                cell_texts = [c.get_text(strip=True) for c in cells]
+                if len(cell_texts) >= 2 and cell_texts[0].isdigit():
+                    rank = int(cell_texts[0])
+                    if rank <= 3:
+                        uma_name = cell_texts[2] if len(cell_texts) > 2 else "不明"
+                        umaban_text = cell_texts[0] if len(cell_texts) > 0 else "0"
+                        # 馬番列を探す（2列目など）
+                        umaban = rank
+                        for i in range(1, len(cell_texts)):
+                            if re.match(r'^\d+$', cell_texts[i]):
+                                umaban = int(cell_texts[i])
+                                break
+                        result.append({"着順": rank, "馬名": uma_name, "馬番": umaban})
+            if result:
+                break
         if result:
-            print(f"[INFO] スポーツナビ 結果取得成功：race_id={race_id} / {len(result)}着")
+            print(f"[INFO] netkeiba.comモバイル 結果取得成功：race_id={race_id} / {len(result)}着")
             return result[:3]
     except Exception as e:
-        print(f"[WARN] スポーツナビ 結果取得失敗 (race_id={race_id}): {e}")
+        print(f"[WARN] netkeiba.comモバイル 結果取得失敗 (race_id={race_id}): {e}")
     return []
 
+
 def fetch_race_data(venue="京都", race_no=11, target_date=None):
-    """
-    指定会場・レースの出馬表データをリアルタイム取得する。
-    スポーツナビ競馬スクレイピングを優先し、失敗時はモックデータにフォールバック。
-
-    Args:
-        venue: 競馬場名
-        race_no: レース番号
-        target_date: 対象日付（YYYYmmdd形式、未指定時は本日）
-
-    Returns:
-        (df, track_condition, race_date_str, race_time_str)
-    """
-    # 未来日付の場合は未開催として空データを返す
-    if target_date:
-        try:
-            target_dt = datetime.strptime(target_date, "%Y%m%d")
-            today = datetime.now()
-            if target_dt.date() > today.date():
-                print(f"[INFO] 未開催レース（未来日付）：{venue} {race_no}R / 日付:{target_date}")
-                return pd.DataFrame(), "不明", "不明", "不明"
-        except ValueError:
-            pass
-
-    # スポーツナビから取得を試行（JRA・NAR両方）
-    venue_in_sponavi = venue in SPONAVI_JRA_CODE or venue in SPONAVI_NAR_CODE
-    if venue_in_sponavi:
-        race_ids = _fetch_sponavi_race_list(venue, race_date=target_date)
-        if race_ids and race_no <= len(race_ids):
-            race_id = race_ids[race_no - 1]
-            horses = _parse_sponavi_shutuba(race_id)
-            if horses:
-                df = pd.DataFrame(horses)
-                track_condition = random.choice(["良", "稍重", "重", "不良"])
-                if target_date:
-                    race_date_str = f"{target_date[:4]}年{target_date[4:6]}月{target_date[6:]}日"
-                else:
-                    today = datetime.now()
-                    days_to_saturday = (5 - today.weekday()) % 7
-                    if days_to_saturday == 0:
-                        days_to_saturday = 7
-                    race_date = today + timedelta(days=days_to_saturday)
-                    race_date_str = race_date.strftime("%Y年%m月%d日")
-                race_time_str = f"{10 + (race_no - 1) // 2}:{(race_no - 1) % 2 * 30:02d}"
-                print(f"データ収集完了（リアルタイム・スポーツナビ）：{venue} {race_no}R / race_id={race_id}")
-                return df, track_condition, race_date_str, race_time_str
-
-    # スクレイピング失敗時は空データを返す（モックデータは生成しない）
+    """指定会場・レースの出馬表データをリアルタイム取得"""
+    if target_date is None:
+        target_date = datetime.now().strftime("%Y%m%d")
+    try:
+        target_dt = datetime.strptime(target_date, "%Y%m%d")
+        today = datetime.now()
+        if target_dt.date() > today.date():
+            print(f"[INFO] 未開催レース（未来日付）：{venue} {race_no}R / 日付:{target_date}")
+            return pd.DataFrame(), "不明", "不明", "不明"
+    except ValueError:
+        pass
+    race_ids = _fetch_netkeiba_race_list(venue, race_date=target_date)
+    if race_ids and race_no <= len(race_ids):
+        race_id = race_ids[race_no - 1]
+        horses = _parse_netkeiba_shutuba(race_id)
+        if horses:
+            df = pd.DataFrame(horses)
+            track_condition = "良"
+            race_date_str = f"{target_date[:4]}年{target_date[4:6]}月{target_date[6:]}日"
+            race_time_str = f"{10 + (race_no - 1) // 2}:{(race_no - 1) % 2 * 30:02d}"
+            print(f"データ収集完了（リアルタイム・netkeiba.comモバイル）：{venue} {race_no}R / race_id={race_id}")
+            return df, track_condition, race_date_str, race_time_str
     print(f"[WARN] データ取得失敗：{venue} {race_no}R / 空データを返却")
     return pd.DataFrame(), "不明", "不明", "不明"
 
 
 def fetch_race_result(venue, race_no, target_date=None):
-    """
-    指定レースの実際の着順（1着〜3着）を取得する。
-    スポーツナビからスクレイピングし、未開催時は空リストを返す。
-
-    Args:
-        venue: 競馬場名
-        race_no: レース番号
-        target_date: 対象日付（YYYYmmdd形式、未指定時は本日）
-
-    Returns:
-        [{"着順": 1, "馬名": "...", "馬番": 1}, ...]
-    """
-    # 未来日付の場合は未開催として空リストを返す
-    if target_date:
-        try:
-            target_dt = datetime.strptime(target_date, "%Y%m%d")
-            today = datetime.now()
-            if target_dt.date() > today.date():
-                print(f"[INFO] 未開催レース：{venue} {race_no}R / 日付:{target_date}")
-                return []
-        except ValueError:
-            pass
-
-    venue_in_sponavi = venue in SPONAVI_JRA_CODE or venue in SPONAVI_NAR_CODE
-    if venue_in_sponavi:
-        race_ids = _fetch_sponavi_race_list(venue, race_date=target_date)
-        if race_ids and race_no <= len(race_ids):
-            race_id = race_ids[race_no - 1]
-            result = _parse_sponavi_result(race_id)
-            if result:
-                print(f"結果取得完了（リアルタイム・スポーツナビ）：{venue} {race_no}R / race_id={race_id}")
-                return result
+    """指定レースの実際の着順（1着〜3着）を取得"""
+    if target_date is None:
+        target_date = datetime.now().strftime("%Y%m%d")
+    try:
+        target_dt = datetime.strptime(target_date, "%Y%m%d")
+        today = datetime.now()
+        if target_dt.date() > today.date():
+            print(f"[INFO] 未開催レース：{venue} {race_no}R / 日付:{target_date}")
+            return []
+    except ValueError:
+        pass
+    race_ids = _fetch_netkeiba_race_list(venue, race_date=target_date)
+    if race_ids and race_no <= len(race_ids):
+        race_id = race_ids[race_no - 1]
+        result = _parse_netkeiba_result(race_id)
+        if result:
+            print(f"結果取得完了（リアルタイム・netkeiba.comモバイル）：{venue} {race_no}R / race_id={race_id}")
+            return result
     print(f"[WARN] 結果取得失敗：{venue} {race_no}R")
     return []
 
 
 def get_today_all_schedule():
-    """
-    本日の全競馬場・全レーススケジュールを取得。
-    スポーツナビからリアルタイムで取得し、失敗時はモックデータを返す。
-    """
+    """本日の全競馬場・全レーススケジュールを取得"""
     schedule = []
     today_str = datetime.now().strftime("%Y%m%d")
     for venue in ALL_VENUES:
         try:
-            race_ids = _fetch_sponavi_race_list(venue, race_date=today_str)
-            race_count = len(race_ids) if race_ids else 12
+            race_ids = _fetch_netkeiba_race_list(venue, race_date=today_str)
+            race_count = len(race_ids) if race_ids else 0
             status = "開催中" if race_ids else "未確認"
         except Exception:
-            race_count = 12
+            race_count = 0
             status = "未確認"
-
         schedule.append({
             "会場": venue,
             "種別": get_venue_type(venue),
             "レース数": race_count,
             "発走時刻": "10:00〜16:00",
-            "馬場状態": random.choice(["良", "稍重", "重", "不良"]),
+            "馬場状態": "良",
             "ステータス": status,
         })
     return schedule
