@@ -153,5 +153,5 @@ def save_setting():
         return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
-    log("管理者サーバー起動: http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    log("管理者サーバー起動: http://127.0.0.1:8765")
+    app.run(host="127.0.0.1", port=8765, debug=False)

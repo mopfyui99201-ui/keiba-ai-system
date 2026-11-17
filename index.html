@@ -38,8 +38,6 @@ body { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-ser
 .memo-inputs button:hover { background: #005a9e; }
 .del-btn { background: #dc2626 !important; }
 .del-btn:hover { background: #b91c1c !important; }
-</style>
-
 .predict-section { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
 .predict-section h2 { color: #38bdf8; font-size: 18px; margin-bottom: 16px; }
 .textarea-wrap { margin-bottom: 16px; }
@@ -82,7 +80,6 @@ textarea { width: 100%; min-height: 120px; background: #0f172a; border: 1px soli
 </style>
 </head>
 <body>
-
 <div class="header">
   <h1>🏇 競馬AI予想（閲覧用）</h1>
   <p>Elizabeth Web - 全国競馬場対応・アコーディオンUI</p>
@@ -100,7 +97,6 @@ textarea { width: 100%; min-height: 120px; background: #0f172a; border: 1px soli
 </div>
 
 <div class="accordion" id="venue-accordion"></div>
-
 <div class="predict-section">
   <h2>🤖 手動コピペAI学習＆予想エンジン</h2>
   <div class="textarea-wrap">
@@ -136,6 +132,7 @@ textarea { width: 100%; min-height: 120px; background: #0f172a; border: 1px soli
     <div class="stat-item"><div class="label">総投資</div><div class="value" id="stat-invest">0円</div></div>
     <div class="stat-item"><div class="label">総払戻</div><div class="value" id="stat-payout">0円</div></div>
   </div>
+</div>
 <script>
 const JRA_VENUES = ["東京","中山","京都","阪神","中京","新潟","福島","小倉","函館","札幌"];
 const NAR_VENUES = ["大井","川崎","船橋","浦和","門別","帯広(ばんえい)","盛岡","水沢","金沢","笠松","名古屋","園田","姫路","高知","佐賀"];
@@ -324,4 +321,3 @@ updateStats();
 </script>
 </body>
 </html>
-</div>
