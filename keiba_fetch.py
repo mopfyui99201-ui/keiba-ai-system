@@ -6,6 +6,7 @@ admin_server.py から利用。失敗時も例外を上げず、取得できた�
 import re
 import json
 import urllib.request
+import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from html import unescape
@@ -19,6 +20,15 @@ NK_RSS_URL = "https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba"
 NAR_TOP_URL = "https://www.keiba.go.jp/"
 NAR_BASE = "https://www.keiba.go.jp"
 BANEI_URL = "https://www.keiba.go.jp/topics/"
+GN_RSS = "https://news.google.com/rss/search?q={q}&hl=ja&gl=JP&ceid=JP:ja"
+# 全ジャンル・過去1週間結果をカバーするGoogleニュース検索フィード
+GOOGLE_QUERIES = [
+    "競馬 重賞 結果",
+    "地方競馬 結果",
+    "ばんえい競馬 結果",
+    "JRA 競馬 開催",
+    "競馬 レース 結果",
+]
 
 RESULT_KEYWORDS = ["結果", "払戻", "着順", "1着", "2着", "3着", "的中", "レース結果", "確定"]
 UPCOMING_KEYWORDS = ["今週", "開催", "重賞", "G1", "G2", "G3", "記念", "競馬開催", "開催情報", "開催日程", "予想", "出走"]
@@ -98,6 +108,33 @@ def classify(title):
     if any(k in t for k in UPCOMING_KEYWORDS):
         return "upcoming"
     return "news"
+
+
+def collect_google_news():
+    """Googleニュース公開RSSで全ジャンル（中央/地方/ばんえい/結果）を補完収集。"""
+    items = []
+    for q in GOOGLE_QUERIES:
+        try:
+            raw = fetch_bytes(GN_RSS.format(q=urllib.parse.quote(q)))
+            root = ET.fromstring(raw)
+            n = 0
+            for item in root.iter("item"):
+                title = (item.findtext("title") or "").strip()
+                link = (item.findtext("link") or "").strip()
+                pub = (item.findtext("pubDate") or "").strip()
+                if not title or not link:
+                    continue
+                items.append({
+                    "title": unescape(title), "url": link,
+                    "source": "Googleニュース", "date": pub,
+                    "kind": classify(title),
+                })
+                n += 1
+                if n >= 12:
+                    break
+        except Exception:
+            continue
+    return items
 
 
 # --- ジャンル判定（閲覧サイトの4タブと対応） ---
@@ -461,6 +498,7 @@ def collect_all():
         ("netkeiba", collect_netkeiba),
         ("NAR", collect_nar),
         ("ばんえい", collect_banei),
+        ("Googleニュース", collect_google_news),
     ]:
         try:
             got = fn()

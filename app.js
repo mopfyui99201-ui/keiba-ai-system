@@ -834,6 +834,72 @@ function classifyStationKind(title) {
   if (/予定|枠順|出走|開催|競走|レース/.test(title)) return 'upcoming';
   return 'news';
 }
+function stationQueries(target, range) {
+  const suf = range === 'results' ? ' 結果' : range === 'upcoming' ? ' 開催' : '';
+  const base = {
+    all:   ['競馬 重賞' + suf, '地方競馬' + suf, 'ばんえい競馬' + suf, 'JRA 競馬' + suf],
+    g1:    ['競馬 重賞' + suf, 'G1 競馬' + suf],
+    jra:   ['JRA 競馬' + suf, '中央競馬' + suf],
+    nar:   ['地方競馬' + suf, 'NAR 競馬' + suf],
+    banei: ['ばんえい競馬' + suf, '帯広 競馬' + suf],
+  };
+  return base[target] || base.all;
+}
+async function fetchGoogleNewsItems(q) {
+  const gUrl = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=ja&gl=JP&ceid=JP:ja';
+  const proxies = [
+    'https://api.rss2json.com/v1/api.json?rss_url=',
+    'https://api.codetabs.com/v1/proxy?quest=',
+  ];
+  for (const px of proxies) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10000);
+      const res = await fetch(px + encodeURIComponent(gUrl), {signal: ctrl.signal});
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      if (px.includes('rss2json')) {
+        const j = await res.json();
+        if (j && j.status === 'ok' && Array.isArray(j.items)) {
+          return j.items.slice(0, 10).map(it => ({title: it.title || '', link: it.link || '', date: (it.pubDate || '').slice(0, 16)}));
+        }
+      } else {
+        const items = parseRssXmlItems(await res.text());
+        if (items.length) return items.slice(0, 10);
+      }
+    } catch (e) { /* 次のプロキシへ */ }
+  }
+  return [];
+}
+/* 内蔵DB（ビッグレース・場別メインレース・コース傾向）からのフォールバック項目 */
+function builtinStationItems(target, venue, range) {
+  const items = [];
+  const kind = range === 'results' ? 'results' : 'upcoming';
+  const want = target === 'all' ? ['g1', 'jra', 'nar', 'banei'] : [target];
+  if (want.includes('g1')) {
+    BIG_RACES.forEach(r => items.push({
+      title: '【内蔵DB】' + r.name + '（' + r.meta + '・年間ビッグレース）',
+      link: r.url || '', date: '', kind, builtin: true,
+    }));
+  }
+  const venueList = venue ? [venue] : [...JRA_VENUES, ...NAR_VENUES, ...BANEI_VENUES];
+  venueList.forEach(v => {
+    const cat = categoryOfVenue(v);
+    if (!want.includes(cat)) return;
+    const ev = (VENUE_EVENTS[v] || [])[0];
+    items.push({
+      title: '【内蔵DB】' + v + (ev ? ' ' + ev : '') + '（年間メインレース・開催時期と馬場傾向は要確認）',
+      link: 'https://www.jra.go.jp/keiba/', date: '', kind, builtin: true,
+    });
+    if ((VENUE_EVENTS[v] || []).length > 1) {
+      items.push({
+        title: '【内蔵DB】' + v + ' ' + VENUE_EVENTS[v][1] + '（サブ重賞・過去傾向データ）',
+        link: 'https://www.jra.go.jp/keiba/', date: '', kind, builtin: true,
+      });
+    }
+  });
+  return items;
+}
 async function fetchStationData() {
   const st = document.getElementById('station-status');
   const setSt = m => { if (st) st.textContent = m; };
@@ -865,6 +931,12 @@ async function fetchStationData() {
       if (raw.length) break;
     } catch (e) { /* 次へ */ }
   }
+  // Googleニュース検索RSSでジャンル別に補完取得（地方・ばんえい・結果を確実にカバー）
+  for (const q of stationQueries(target, range)) {
+    const got = await fetchGoogleNewsItems(q);
+    raw.push(...got);
+    if (raw.length >= 25) break;
+  }
   // 同期データも範囲に応じて候補に追加
   if (latestData) {
     const keys = range === 'results' ? ['results'] : range === 'upcoming' ? ['upcoming'] : ['upcoming','results','news'];
@@ -875,40 +947,48 @@ async function fetchStationData() {
   // フィルタ：対象ジャンル/競馬場/範囲
   const NG = ['ビール','キャンペーン','グッズ','プレゼント','求人','採用','コラボ','入場券','トークショー','テレビ','ラジオ'];
   const wantKinds = range === 'results' ? ['results'] : range === 'upcoming' ? ['upcoming'] : ['upcoming','results'];
-  const picked = [];
-  raw.forEach(it => {
-    const t = it.title || '';
-    if (t.length < 5 || NG.some(w => t.includes(w))) return;
-    const kind = classifyStationKind(t);
-    if (!wantKinds.includes(kind)) return;
-    const rv = venueOfRace(t);
-    if (venue && rv !== venue && !t.includes(venue)) return;
-    if (target !== 'all') {
-      if (target === 'g1') { if (!/G1|重賞|ステークス|大賞典|記念|賞|杯/.test(t)) return; }
-      else if (target === 'jra' && !(JRA_VENUES.some(v => t.includes(v)) || /JRA|中央/.test(t))) return;
-      else if (target === 'nar' && !(NAR_VENUES.some(v => t.includes(v)) || /地方|NAR|南関東/.test(t))) return;
-      else if (target === 'banei' && !/ばんえい|帯広/.test(t)) return;
-    }
-    picked.push(it);
-  });
-  // 重複除去（URL or タイトル）
-  const seen = new Set();
-  const uniq = picked.filter(it => {
-    const k = it.link || it.title;
-    if (seen.has(k)) return false;
-    seen.add(k); return true;
-  }).slice(0, 30);
-  if (!uniq.length) { setSt('⚠️ 条件に合うデータが見つかりませんでした（同期データのみ表示中）'); renderLearningGraph(); return; }
+  const filterRaw = (list) => {
+    const picked = [];
+    list.forEach(it => {
+      const t = it.title || '';
+      if (t.length < 5 || NG.some(w => t.includes(w))) return;
+      const kind = it.kind || classifyStationKind(t);
+      if (!wantKinds.includes(kind)) return;
+      const rv = venueOfRace(t);
+      if (venue && rv !== venue && !t.includes(venue)) return;
+      if (target !== 'all') {
+        if (target === 'g1') { if (!/G1|重賞|ステークス|大賞典|記念|賞|杯/.test(t)) return; }
+        else if (target === 'jra' && !(JRA_VENUES.some(v => t.includes(v)) || /JRA|中央/.test(t))) return;
+        else if (target === 'nar' && !(NAR_VENUES.some(v => t.includes(v)) || /地方|NAR|南関東|大井|川崎|門別|園田|名古屋|高知|佐賀|金沢|笠松|盛岡|水沢|船橋|浦和|姫路/.test(t))) return;
+        else if (target === 'banei' && !/ばんえい|帯広/.test(t)) return;
+      }
+      picked.push(it);
+    });
+    // 重複除去（タイトル基準。内蔵DB項目は同一URLを共有するため）
+    const seen = new Set();
+    return picked.filter(it => {
+      const k = it.title;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    }).slice(0, 30);
+  };
+  let uniq = filterRaw(raw);
+  // 外部・同期データが0件なら内蔵DB（ビッグレース/場別メイン/コース傾向）で補完
+  if (!uniq.length) {
+    uniq = filterRaw(builtinStationItems(target, venue, range));
+    if (uniq.length) setSt('外部取得0件のため内蔵データから補完します…');
+  }
+  if (!uniq.length) { setSt('⚠️ 条件に合うデータが見つかりませんでした'); renderLearningGraph(); return; }
   let added = 0;
   uniq.forEach(it => {
-    const kind = classifyStationKind(it.title);
+    const kind = it.kind || classifyStationKind(it.title);
     const cat = target !== 'all' ? target : (categoryOfVenue(venueOfRace(it.title)) || 'jra');
     const ven = venueOfRace(it.title) || (venue || '（指定なし）');
     const rec = {
       id: Date.now() + Math.floor(Math.random() * 100000), category: cat,
       categoryLabel: LEARN_CATEGORIES[cat] ? LEARN_CATEGORIES[cat].label : cat,
       venue: ven, race: it.title.slice(0, 60),
-      text: '【外部取得 ' + (kind === 'results' ? '結果' : '予定') + '】' + it.title + (it.synced ? '（管理画面同期）' : '（netkeiba RSS）'),
+      text: '【外部取得 ' + (kind === 'results' ? '結果' : '予定') + '】' + it.title + (it.builtin ? '（内蔵DB）' : it.synced ? '（管理画面同期）' : '（外部RSS）'),
       date: new Date().toISOString(), source: 'station',
     };
     if (!learnings.some(l => l.race === rec.race && l.category === cat)) { learnings.push(rec); added++; }

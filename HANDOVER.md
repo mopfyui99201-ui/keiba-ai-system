@@ -256,3 +256,14 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
   - `pnlSummary()`：投資/払戻/収支/的中率/回収率を算出しグラフ上部に表示
   - `exportBackup()/importBackup()/importBackupFile()`：7つのlocalStorageキーをJSONで書き出し・復元
 - 検証: node --check OK。DOMスタブで 予想→答え合わせ（的中判定/収支/反省レッスン生成）→ステーション取得（NG除外・2件保存）→グラフ描画 を確認
+
+## 外部取得の全ジャンル対応強化（地方・ばんえい・結果の空振り防止）
+- `keiba_fetch.py`
+  - `collect_google_news()` 新設：Googleニュース公開RSS（`news.google.com/rss/search`）を5クエリ（競馬重賞結果/地方競馬結果/ばんえい競馬結果/JRA競馬開催/競馬レース結果）で収集。1クエリ最大12件・失敗時スキップ
+  - `collect_all()` のソースに追加。実測94件取得（result 33件＝banei 9/local 7/jra 16/large 1、upcoming 14）
+- `app.js`（閲覧サイト・学習ステーション）
+  - `stationQueries()`：対象×範囲に応じたGoogleニュース検索クエリを生成（例: nar+both → 「地方競馬」「NAR 競馬」）
+  - `fetchGoogleNewsItems()`：rss2json→codetabsプロキシでGoogleニュースRSSを取得
+  - `builtinStationItems()`：外部・同期データが0件のとき、内蔵DB（BIG_RACES・VENUE_EVENTSの場別メイン/サブ重賞・開催傾向メモ）から対象カテゴリの項目を生成してフォールバック保存
+  - フィルタを `filterRaw()` に集約し外部→内蔵の2段適用。nar判定の場名リストを拡充。重複除去をURL→タイトル基準に修正（内蔵項目が同一URLで潰れるバグを解消）
+- 検証: node --check OK。スタブで NAR選択→Googleニュース2件保存、外部0件→内蔵DB16件保存を確認。admin `/api/keiba-update` 実測94件
