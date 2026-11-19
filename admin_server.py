@@ -249,6 +249,17 @@ def keiba_update():
     try:
         import keiba_fetch
         data = keiba_fetch.collect_all()
+        # 手動貼付・編集済みデータを保全（再収集で消えないように）
+        old = read_json(RAW_JSON, {}) or {}
+        old_items = old.get("items", []) if isinstance(old, dict) else []
+        manual = [it for it in old_items if str(it.get("url", "")).startswith("manual://")]
+        notes = {it.get("url"): it.get("note") for it in old_items if it.get("note")}
+        for it in data["items"]:
+            u = it.get("url")
+            if u in notes:
+                it["note"] = notes[u]
+        data["items"].extend(manual)
+        data = keiba_fetch.enrich_result_details(data)
         write_json(RAW_JSON, data)
         s = keiba_fetch.summarize(data)
         return jsonify({
@@ -403,6 +414,30 @@ def filter_config():
     write_json(FILTER_JSON, cur)
     log(f"filter-config 更新: ng={len(cur.get('ng', []))} ok={len(cur.get('ok', []))}")
     return jsonify({"success": True, "config": keiba_fetch.filter_config()})
+
+@app.route("/api/keiba-add-result", methods=["POST"])
+def keiba_add_result():
+    """貼り付けたレース結果テキストを解析して「過去1週間のレース結果」に追加。"""
+    body = request.get_json(silent=True) or {}
+    text = body.get("text") or ""
+    url = (body.get("url") or "").strip()
+    if not text.strip():
+        return jsonify({"success": False, "error": "テキストが空です"})
+    try:
+        import keiba_fetch
+        item = keiba_fetch.parse_result_text(text, url=url or "", source="手動貼付")
+    except Exception as e:
+        return jsonify({"success": False, "error": "解析失敗: " + str(e)[:100]})
+    if not item:
+        return jsonify({"success": False, "error": "着順データを認識できませんでした。JRA/netkeibaの結果表をそのまま貼り付けてください"})
+    data = read_json(RAW_JSON, None) or {"fetched_at": datetime.now().isoformat(timespec="seconds"), "items": [], "errors": []}
+    data.setdefault("items", [])
+    # 同一URLの手動項目があれば置き換え
+    data["items"] = [it for it in data["items"] if it.get("url") != item["url"]]
+    data["items"].insert(0, item)
+    write_json(RAW_JSON, data)
+    log("keiba-add-result: " + item["title"][:60])
+    return jsonify({"success": True, "item": item, "total": len(data["items"])})
 
 @app.route("/api/keiba-ai-text")
 def keiba_ai_text():

@@ -70,6 +70,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
     <div class="result" id="result-keiba"></div>
     <div id="keiba-cards" style="margin-top:10px;"></div>
     <details style="margin-top:14px;border-top:1px solid #3e3e42;padding-top:10px;">
+      <summary style="font-size:12px;color:#8e8e93;cursor:pointer;">📋 レース結果テキスト貼り付け → 自動まとめ</summary>
+      <div style="margin-top:8px;font-size:11px;color:#8e8e93;">JRA公式・netkeiba等のレース結果画面をブラウザで全選択コピーし、そのまま貼り付けてください。着順・馬名・騎手・タイム等を自動解析して「🏆 過去1週間のレース結果」に追加します。</div>
+      <textarea id="result-paste" rows="8" placeholder="ここにレース結果テキストを貼り付け（例: 1着 1枠1番 サノノファイター（田辺裕信） 1:39.0 …）" style="width:100%;background:#1e1e1e;color:#ccc;border:1px solid #3e3e42;border-radius:6px;padding:8px;font-size:11px;margin-top:6px;"></textarea>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+        <button class="btn" style="padding:6px 12px;font-size:11px;" onclick="addResultText()">✨ 結果を自動解析して追加</button>
+        <span id="result-parse-status" style="font-size:11px;color:#30d158;"></span>
+      </div>
+    </details>
+    <details style="margin-top:14px;border-top:1px solid #3e3e42;padding-top:10px;">
       <summary style="font-size:12px;color:#8e8e93;cursor:pointer;">⚙️ ノイズフィルタ設定（NGワード・採用ワード）</summary>
       <div style="margin-top:8px;font-size:11px;color:#8e8e93;">1行に1ワード。NGワードに一致する記事は自動で除外されます（重賞/G1等の強いシグナルがある記事は除く）。採用ワードが多い記事ほど上位に表示されます。</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
@@ -234,7 +243,37 @@ function loadStats() {
 let lastKeibaData = null;
 function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function aiTextForItem(it) {
-  return '【AI学習】' + it.title + '（' + it.source + '）' + (it.date ? ' ' + it.date : '') + '\n' + it.url;
+  let t = '【AI学習】' + it.title + '（' + it.source + '）' + (it.date ? ' ' + it.date : '') + '\n' + it.url;
+  if (it.detail && it.detail.entries) {
+    t += '\n■ レース結果';
+    if (it.detail.condition) t += ' / ' + it.detail.condition;
+    it.detail.entries.slice(0, 5).forEach(e => {
+      t += '\n' + e.rank + '着 ' + (e.waku ? e.waku + '枠' : '') + (e.umaban ? e.umaban + '番 ' : '') + e.name +
+        (e.jockey ? '（' + e.jockey + '）' : '') + (e.time ? ' ' + e.time : '') +
+        (e.margin ? ' 着差' + e.margin : '') + (e.corner ? ' 通過' + e.corner : '') + (e.last3f ? ' 上り' + e.last3f : '');
+    });
+    if (it.detail.summary) t += '\n傾向: ' + it.detail.summary;
+  }
+  if (it.note) t += '\nメモ: ' + it.note;
+  return t;
+}
+function detailHtml(it) {
+  const d = it.detail;
+  if (!d || !d.entries || !d.entries.length) return '';
+  const medals = ['🥇','🥈','🥉'];
+  let h = '<div style="background:#1e1e1e;border:1px solid #3e3e42;border-radius:6px;padding:8px;margin-top:6px;font-size:11px;">';
+  if (d.race_name || d.condition) h += '<div style="color:#8e8e93;margin-bottom:4px;">' + escH([d.date, d.venue, d.race_no, d.race_name, d.condition].filter(Boolean).join(' / ')) + '</div>';
+  d.entries.slice(0, 5).forEach(e => {
+    h += '<div style="color:#ccc;margin:2px 0;">' + (medals[e.rank-1] || (e.rank + '着')) + ' ' +
+      (e.waku ? '[' + e.waku + '枠 ' : '[') + (e.umaban || '?') + '番] ' + escH(e.name || '') +
+      (e.jockey ? '（' + escH(e.jockey) + (e.time ? ' / ' + escH(e.time) : '') + '）' : '') +
+      (e.margin ? ' 着差' + escH(e.margin) : '') +
+      (e.corner ? ' 通過' + escH(e.corner) : '') +
+      (e.last3f ? ' 上り' + escH(e.last3f) : '') + '</div>';
+  });
+  if (d.summary) h += '<div style="color:#ffd60a;margin-top:4px;">💡 ' + escH(d.summary) + '</div>';
+  h += '</div>';
+  return h;
 }
 function copyText(text, label) {
   const done = () => alert('コピーしました');
@@ -247,6 +286,30 @@ function copyText(text, label) {
   }
 }
 const KIND_LABELS = {upcoming:'直近のレース予定', result:'過去1週間のレース結果', news:'馬・騎手・関連ニュース'};
+function groupFlat(items) {
+  const g = {};
+  (items || []).forEach(it => {
+    const k = it.genre || 'jra';
+    (g[k] = g[k] || []).push(it);
+  });
+  return g;
+}
+function newsItemHtml(it) {
+  return '<div class="news-item" data-url="' + escH(it.url) + '" style="background:#252526;border:1px solid #3e3e42;border-radius:6px;padding:8px;margin-bottom:6px;margin-left:12px;display:flex;gap:8px;align-items:flex-start;">' +
+    '<input type="checkbox" class="news-check" data-url="' + escH(it.url) + '" style="margin-top:3px;transform:scale(1.2);" onchange="updateSelCount()">' +
+    '<div style="flex:1;">' +
+    '<div style="font-size:12px;color:#fff;margin-bottom:4px;">' + escH(it.title) + '</div>' +
+    detailHtml(it) +
+    '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;">' +
+    '<a href="' + escH(it.url) + '" target="_blank" rel="noopener" style="font-size:11px;color:#64d2ff;">情報元：' + escH(it.source) + '</a>' +
+    (it.date ? '<span style="font-size:10px;color:#8e8e93;">' + escH(it.date) + '</span>' : '') +
+    (it.note ? '<span style="font-size:10px;color:#ffd60a;">メモ:' + escH(it.note) + '</span>' : '') +
+    '<span style="margin-left:auto;display:flex;gap:4px;">' +
+    '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="edit" data-url="' + escH(it.url) + '">✏️ 編集</button>' +
+    '<button class="btn" style="padding:4px 8px;font-size:10px;background:#b91c1c;" data-news="del" data-url="' + escH(it.url) + '">🗑️ 削除</button>' +
+    '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="copy" data-url="' + escH(it.url) + '">📋 AI学習用コピー</button>' +
+    '</span></div></div></div>';
+}
 function renderKeibaCards(d) {
   const box = document.getElementById('keiba-cards');
   if (!d || (!d.upcoming && !d.results && !d.news)) { box.innerHTML = ''; return; }
@@ -264,33 +327,44 @@ function renderKeibaCards(d) {
     '<button class="btn" style="padding:6px 10px;font-size:11px;background:#991b1b;" onclick="clearAllNews()">🗑️ 収集データをすべて一括消去</button>' +
     (d.filtered ? '<span style="font-size:11px;color:#8e8e93;">🚫 ノイズ自動除外: ' + d.filtered + '件</span>' : '') +
     '</div>';
+  const GENRE_ORDER = ['large_event', 'jra', 'local', 'banei'];
+  const GENRE_LABELS = {
+    large_event: '🏆 大型イベント（G1・ビッグレース）',
+    jra: '🏇 中央競馬（JRA）',
+    local: '🐎 地方競馬（南関東・各地）',
+    banei: '🛷 特殊競馬（帯広・ばんえい）',
+  };
+  // sections（3分類×ジャンル入れ子）があればそれを使い、なければフラット一覧にフォールバック
+  let sections = d.sections;
+  if (!sections) {
+    sections = {
+      upcoming: groupFlat(d.upcoming),
+      result: groupFlat(d.results),
+      news: groupFlat(d.news),
+    };
+  }
+  const flat = [];
+  groups.forEach(([, , items]) => { (items || []).forEach(it => flat.push(it)); });
   groups.forEach(([kind, label, items, color]) => {
-    if (!items || !items.length) return;
+    const sec = sections[kind];
+    if (!sec || !Object.keys(sec).length) return;
+    const secCount = Object.values(sec).reduce((n, arr) => n + arr.length, 0);
     html += '<div class="news-group" data-kind="' + kind + '" style="margin-bottom:14px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-      '<div style="font-size:12px;font-weight:700;color:' + color + ';">' + label + '（' + items.length + '件）</div>' +
+      '<div style="font-size:12px;font-weight:700;color:' + color + ';">' + label + '（' + secCount + '件）</div>' +
       '<button class="btn" style="padding:4px 10px;font-size:10px;background:#991b1b;" onclick="clearKindNews(\'' + kind + '\')">🗑️ この項目を一括消去</button></div>';
-    items.slice(0, 50).forEach(it => {
-      html += '<div class="news-item" data-url="' + escH(it.url) + '" style="background:#252526;border:1px solid #3e3e42;border-radius:6px;padding:8px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;">' +
-        '<input type="checkbox" class="news-check" data-url="' + escH(it.url) + '" style="margin-top:3px;transform:scale(1.2);" onchange="updateSelCount()">' +
-        '<div style="flex:1;">' +
-        '<div style="font-size:12px;color:#fff;margin-bottom:4px;">' + escH(it.title) + '</div>' +
-        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
-        '<a href="' + escH(it.url) + '" target="_blank" rel="noopener" style="font-size:11px;color:#64d2ff;">情報元：' + escH(it.source) + '</a>' +
-        (it.date ? '<span style="font-size:10px;color:#8e8e93;">' + escH(it.date) + '</span>' : '') +
-        (it.note ? '<span style="font-size:10px;color:#ffd60a;">メモ:' + escH(it.note) + '</span>' : '') +
-        '<span style="margin-left:auto;display:flex;gap:4px;">' +
-        '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="edit" data-url="' + escH(it.url) + '">✏️ 編集</button>' +
-        '<button class="btn" style="padding:4px 8px;font-size:10px;background:#b91c1c;" data-news="del" data-url="' + escH(it.url) + '">🗑️ 削除</button>' +
-        '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="copy" data-url="' + escH(it.url) + '">📋 AI学習用コピー</button>' +
-        '</span></div></div></div>';
+    GENRE_ORDER.forEach(g => {
+      const gitems = sec[g];
+      if (!gitems || !gitems.length) return;
+      html += '<div style="font-size:11px;font-weight:700;color:#8e8e93;margin:6px 0 4px;padding-left:6px;border-left:3px solid #3e3e42;">' + (GENRE_LABELS[g] || g) + '（' + gitems.length + '件）</div>';
+      gitems.slice(0, 50).forEach(it => {
+        html += newsItemHtml(it);
+      });
+      if (gitems.length > 50) html += '<div style="font-size:11px;color:#8e8e93;padding:4px 0 4px 12px;">…他 ' + (gitems.length - 50) + ' 件</div>';
     });
-    if (items.length > 50) html += '<div style="font-size:11px;color:#8e8e93;padding:4px 0;">…他 ' + (items.length - 50) + ' 件（先頭50件のみ表示）</div>';
     html += '</div>';
   });
   box.innerHTML = html;
-  const flat = [];
-  groups.forEach(([, , items]) => { (items || []).forEach(it => flat.push(it)); });
   box.querySelectorAll('button[data-news]').forEach(b => {
     const url = b.dataset.url;
     const act = b.dataset.news;
@@ -388,6 +462,24 @@ function loadKeibaNews() {
   fetch('/api/keiba-news').then(r => r.json()).then(d => {
     if (d.success) renderKeibaCards(d);
   }).catch(() => {});
+}
+function addResultText() {
+  const text = document.getElementById('result-paste').value;
+  if (!text.trim()) { alert('先にレース結果テキストを貼り付けてください'); return; }
+  const st = document.getElementById('result-parse-status');
+  st.textContent = '解析中...'; st.style.color = '#8e8e93';
+  fetch('/api/keiba-add-result', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})})
+    .then(r => r.json()).then(d => {
+      if (d.success) {
+        st.textContent = '✅ 追加しました: ' + (d.item && d.item.title ? d.item.title.slice(0, 40) : '');
+        st.style.color = '#30d158';
+        document.getElementById('result-paste').value = '';
+        loadKeibaNews();
+      } else {
+        st.textContent = '❌ ' + (d.error || '失敗');
+        st.style.color = '#ff453a';
+      }
+    }).catch(err => { st.textContent = 'エラー: ' + err; st.style.color = '#ff453a'; });
 }
 function loadFilterConfig() {
   fetch('/api/filter-config').then(r => r.json()).then(d => {

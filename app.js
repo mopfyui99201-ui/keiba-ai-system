@@ -221,28 +221,55 @@ function loadLatest() {
     latestData = data;
     if (!data || (!data.upcoming && !data.results && !data.news)) return;
     populateRaceSelect();
-    timeEl.textContent = '更新: ' + (data.synced_at || data.fetched_at || '').replace('T',' ').slice(0,16);
-    let html = '';
-    const groups = [
-      ['直近レース予定・注目', data.upcoming],
-      ['過去1週間の主な結果', data.results],
-      ['その他ニュース', data.news],
-    ];
-    groups.forEach(([label, items]) => {
-      if (!items || !items.length) return;
-      html += '<div class="latest-group"><div class="g-title">' + esc(label) + '</div>';
-      items.slice(0, 8).forEach(it => {
-        html += '<div class="latest-item"><span class="li-title">' + esc(it.title || '') + '</span>' +
-          '<a class="li-src" href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.source || '') + '</a></div>';
+    const synced = (data.synced_at || data.fetched_at || '').replace('T', ' ').slice(0, 16);
+    // ジャンル別に各タブの最新情報カードへ振り分け
+    const CARDS = {
+      large_event: ['latest-card', 'latest-body', 'latest-time'],
+      jra: ['latest-jra', 'latest-body-jra', 'latest-time-jra'],
+      local: ['latest-nar', 'latest-body-nar', 'latest-time-nar'],
+      banei: ['latest-banei', 'latest-body-banei', 'latest-time-banei'],
+    };
+    const allItems = [];
+    [['直近レース予定・注目', data.upcoming], ['過去1週間の主な結果', data.results], ['その他ニュース', data.news]]
+      .forEach(([label, items]) => (items || []).forEach(it => allItems.push({sec: label, it})));
+    Object.keys(CARDS).forEach(genre => {
+      const [cid, bid, tid] = CARDS[genre];
+      const c = document.getElementById(cid);
+      if (!c) return;
+      const mine = allItems.filter(x => (x.it.genre || 'jra') === genre);
+      const hasAi = (genre === 'large_event' && !!data.ai_text);
+      if (!mine.length && !hasAi) { c.style.display = 'none'; return; }
+      const te = document.getElementById(tid);
+      if (te) te.textContent = '更新: ' + synced;
+      const be = document.getElementById(bid);
+      let html = '';
+      [['直近レース予定・注目', 'upcoming'], ['過去1週間の主な結果', 'result'], ['その他ニュース', 'news']].forEach(([label]) => {
+        const items = mine.filter(x => x.sec === label);
+        if (!items.length) return;
+        html += '<div class="latest-group"><div class="g-title">' + esc(label) + '</div>';
+        items.slice(0, 8).forEach(x => {
+          const it = x.it;
+          html += '<div class="latest-item"><span class="li-title">' + esc(it.title || '') + '</span>' +
+            '<a class="li-src" href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.source || '') + '</a>';
+          if (it.detail && it.detail.entries && it.detail.entries.length) {
+            html += '<div style="font-size:10px;color:#8e8e93;margin-top:2px;">' +
+              it.detail.entries.slice(0, 3).map(e =>
+                (e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank + '着') + ' ' + esc(e.name || '') +
+                (e.last3f ? ' 上り' + esc(e.last3f) : '')).join(' ／ ') + '</div>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
       });
-      html += '</div>';
+      be.innerHTML = html;
+      c.style.display = 'block';
     });
+    // 大型イベントカードにAI学習テキストを添付
     if (data.ai_text) {
-      html += '<div class="latest-ai"><div class="g-title" style="color:#0a84ff;">🤖 AI学習用データ（タップで全選択）</div>' +
+      body.innerHTML += '<div class="latest-ai"><div class="g-title" style="color:#0a84ff;">🤖 AI学習用データ（タップで全選択）</div>' +
         '<textarea readonly onclick="this.select()">' + esc(data.ai_text) + '</textarea></div>';
     }
-    body.innerHTML = html;
-    card.style.display = 'block';
+    if (timeEl) timeEl.textContent = '更新: ' + synced;
   }).catch(() => {});
 }
 

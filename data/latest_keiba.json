@@ -1,8 +1,201 @@
 {
-  "fetched_at": "2026-11-19T21:27:49",
-  "synced_at": "2026-11-19T21:31:06",
-  "upcoming": [],
-  "results": [],
-  "news": [],
-  "ai_text": "【競馬AI学習データ 2026-11-19】\n■ 直近レース予定・注目ニュース\n■ 過去1週間の主な結果・ニュース"
+  "fetched_at": "2026-11-19T21:58:35",
+  "synced_at": "2026-11-19T21:58:45",
+  "upcoming": [
+    {
+      "title": "重賞・オープン特別競走（11月14日から15日）のレーティング",
+      "url": "https://www.jra.go.jp/news/202611/111906.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "エリザベス女王杯（GⅠ）　出走馬の「調教後の馬体重」",
+      "url": "https://www.jra.go.jp/news/202611/111203.html",
+      "source": "JRA",
+      "date": "11月12日（木曜）",
+      "kind": "upcoming",
+      "genre": "large_event"
+    },
+    {
+      "title": "マイルチャンピオンシップ（GⅠ）　出走馬の「調教後の馬体重」",
+      "url": "https://www.jra.go.jp/news/202611/111907.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "upcoming",
+      "genre": "large_event"
+    },
+    {
+      "title": "開催競馬場・今日の出来事、明日の取消・変更等（11月14日（土曜））",
+      "url": "https://www.jra.go.jp/news/202611/111404.html",
+      "source": "JRA",
+      "date": "11月14日（土曜）",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "開催競馬場・今日の出来事（11月15日（日曜））",
+      "url": "https://www.jra.go.jp/news/202611/111505.html",
+      "source": "JRA",
+      "date": "11月15日（日曜）",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "11月21日（土曜）、22日（日曜）、23日（祝日・月曜）は3日連続開催",
+      "url": "https://www.jra.go.jp/news/202611/111504.html",
+      "source": "JRA",
+      "date": "11月15日（日曜）",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "有馬記念（GⅠ）当日のラウンジエリア一般開放と有料席発売休止のご案内【ライトウインズりんくうタウン】",
+      "url": "https://www.jra.go.jp/news/202611/111402.html",
+      "source": "JRA",
+      "date": "11月14日（土曜）",
+      "kind": "upcoming",
+      "genre": "large_event"
+    }
+  ],
+  "results": [
+    {
+      "title": "11月23日（祝日・月曜）週の平日払戻サービスについて",
+      "url": "https://www.jra.go.jp/news/202611/111502.html",
+      "source": "JRA",
+      "date": "11月15日（日曜）",
+      "kind": "result",
+      "genre": "jra"
+    },
+    {
+      "title": "11月30日（月曜）週の平日払戻サービスについて",
+      "url": "https://www.jra.go.jp/news/202611/111503.html",
+      "source": "JRA",
+      "date": "11月15日（日曜）",
+      "kind": "result",
+      "genre": "jra"
+    },
+    {
+      "title": "11月8日 大井 11R 南関東S / ダート1600m・良",
+      "url": "manual://20261119215834",
+      "source": "手動貼付",
+      "date": "11月8日",
+      "kind": "result",
+      "genre": "local",
+      "detail": {
+        "race_name": "南関東S",
+        "date": "11月8日",
+        "venue": "大井",
+        "race_no": "11R",
+        "condition": "ダート1600m・良",
+        "entries": [
+          {
+            "rank": 1,
+            "waku": 3,
+            "umaban": 3,
+            "name": "テストホース",
+            "jockey": "騎手テスト",
+            "time": "1:38.5",
+            "corner": "",
+            "last3f": ""
+          },
+          {
+            "rank": 2,
+            "waku": 5,
+            "umaban": 5,
+            "name": "サンプルウマ",
+            "jockey": "ジョッキー名",
+            "time": "1:38.9",
+            "corner": "",
+            "last3f": ""
+          }
+        ],
+        "summary": "1着はテストホース。上位争いは混戦気味"
+      }
+    }
+  ],
+  "news": [
+    {
+      "title": "ステレンボッシュの競走馬登録抹消",
+      "url": "https://www.jra.go.jp/news/202611/111911.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "チェルヴィニアの競走馬登録抹消",
+      "url": "https://www.jra.go.jp/news/202611/111912.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "ラヴァンダの競走馬登録抹消",
+      "url": "https://www.jra.go.jp/news/202611/111910.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "ジョアン・モレイラ騎手に短期免許の交付",
+      "url": "https://www.jra.go.jp/news/202611/111902.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "「2026ヤングジョッキーズシリーズ　ファイナルラウンド」騎乗予定騎手の変更",
+      "url": "https://www.jra.go.jp/news/202611/111908.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月19日（木曜））",
+      "url": "https://www.jra.go.jp/news/202611/111909.html",
+      "source": "JRA",
+      "date": "11月19日（木曜）",
+      "kind": "news",
+      "genre": "large_event"
+    },
+    {
+      "title": "キャンディードの競走馬登録抹消",
+      "url": "https://www.jra.go.jp/news/202611/111803.html",
+      "source": "JRA",
+      "date": "11月18日（水曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月18日（水曜））",
+      "url": "https://www.jra.go.jp/news/202611/111802.html",
+      "source": "JRA",
+      "date": "11月18日（水曜）",
+      "kind": "news",
+      "genre": "large_event"
+    },
+    {
+      "title": "岡田　祥嗣騎手の引退",
+      "url": "https://www.jra.go.jp/news/202611/111801.html",
+      "source": "JRA",
+      "date": "11月18日（水曜）",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月17日（火曜））",
+      "url": "https://www.jra.go.jp/news/202611/111702.html",
+      "source": "JRA",
+      "date": "11月17日（火曜）",
+      "kind": "news",
+      "genre": "large_event"
+    }
+  ],
+  "ai_text": "【競馬AI学習データ 2026-11-19】\n■ 直近レース予定・注目ニュース\n・重賞・オープン特別競走（11月14日から15日）のレーティング（JRA）\n・エリザベス女王杯（GⅠ）　出走馬の「調教後の馬体重」（JRA）\n・マイルチャンピオンシップ（GⅠ）　出走馬の「調教後の馬体重」（JRA）\n・開催競馬場・今日の出来事、明日の取消・変更等（11月14日（土曜））（JRA）\n・開催競馬場・今日の出来事（11月15日（日曜））（JRA）\n・11月21日（土曜）、22日（日曜）、23日（祝日・月曜）は3日連続開催（JRA）\n・有馬記念（GⅠ）当日のラウンジエリア一般開放と有料席発売休止のご案内【ライトウインズりんくうタウン】（JRA）\n・ステレンボッシュの競走馬登録抹消（JRA）\n・チェルヴィニアの競走馬登録抹消（JRA）\n・ラヴァンダの競走馬登録抹消（JRA）\n・ジョアン・モレイラ騎手に短期免許の交付（JRA）\n・「2026ヤングジョッキーズシリーズ　ファイナルラウンド」騎乗予定騎手の変更（JRA）\n・マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月19日（木曜））（JRA）\n・キャンディードの競走馬登録抹消（JRA）\n・マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月18日（水曜））（JRA）\n■ 過去1週間の主な結果・ニュース\n・11月23日（祝日・月曜）週の平日払戻サービスについて（JRA）\n・11月30日（月曜）週の平日払戻サービスについて（JRA）\n・11月8日 大井 11R 南関東S / ダート1600m・良（手動貼付）"
 }
