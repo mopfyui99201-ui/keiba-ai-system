@@ -276,3 +276,8 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
 - 数値キャップ：`pct()`（Math.min(100,Math.max(0,round))）を新設し、確信度・的中率・回収率・学習進捗に適用（101%超過を完全防止）
 - キャッシュバスター：`admin_server.py` の `bust_viewer_cache()` が sync-viewer 実行時に index.html の `app.js?v=` を `YYYYMMDDHHMM` へ自動書換→git push。全端末へ即反映
 - 検証: node --check/py_compile OK。pct(150)=100・条件ブースト・重複スキップ・シェア文面・bust_viewer_cache実測OK
+
+## 使い方マニュアル追加
+- `index.html`：ホーム画面右上に「📖 使い方マニュアル」ボタン。タップで全画面オーバーレイ（`manual-overlay`）が開き、①6メニューの見方（ツリー図）②AI予想の使い方（6ステップ）③学習記録・答え合わせ・AIレベルの仕組み ④PWAホーム画面追加方法（iPhone/Android別）を図解風テキストで表示。背景タップor✕で閉じる
+- `app.js`：`toggleManual()` 追加
+- 検証: node --check OK

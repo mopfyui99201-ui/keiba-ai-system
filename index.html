@@ -175,6 +175,9 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <!-- ホーム画面（メニュー一覧） -->
 <div class="tab-panel active" id="panel-home">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <button class="pill" onclick="toggleManual()" style="font-size:12px;">📖 使い方マニュアル</button>
+  </div>
   <div class="menu-grid">
     <div class="menu-card" onclick="setTab('events')"><span class="m-emoji">🏆</span><div class="m-name">大型イベント</div><div class="m-desc">G1・ビッグレース情報</div></div>
     <div class="menu-card" onclick="setTab('jra')"><span class="m-emoji">🏇</span><div class="m-name">中央競馬</div><div class="m-desc">JRA全10場・攻略メモ</div></div>
@@ -520,6 +523,75 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <div class="view-count" id="view-count"></div>
 </div>
-<script src="app.js?v=202611192315"></script>
+
+<!-- 使い方マニュアル（オーバーレイ） -->
+<div id="manual-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;overflow-y:auto;" onclick="if(event.target===this)toggleManual()">
+  <div style="max-width:560px;margin:24px auto;background:#1e1e1e;border:1px solid #3a3f4d;border-radius:16px;padding:18px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:16px;font-weight:700;">📖 使い方マニュアル</div>
+      <button class="pill" onclick="toggleManual()">✕ 閉じる</button>
+    </div>
+    <div class="card" style="margin-bottom:10px;">
+      <h3>① 6つのメニューの見方</h3>
+      <pre style="font-family:inherit;font-size:12px;color:#cccccc;white-space:pre-wrap;line-height:1.7;margin:0;">🏠 ホーム
+ ├─ 🏆 大型イベント … G1・ビッグレース年間情報＋最新ニュース
+ ├─ 🏇 中央競馬     … JRA全10場の攻略メモ・お気に入り・公式リンク
+ ├─ 🐎 地方競馬     … 南関東・門別・園田などNAR各場
+ ├─ 🛷 特殊競馬     … 帯広・ばんえい競馬の専門情報
+ ├─ 🎯 AI予想・買い目 … 下記②の手順で即予想
+ └─ 📚 学習の記録   … 下記③の手順でAIを育てる
+
+各画面の競馬場カードはタップで開閉。⭐トグルでお気に入り登録
+→ ホーム下部の「⭐お気に入り一覧」からワンタップで予想へジャンプ。</pre>
+    </div>
+    <div class="card" style="margin-bottom:10px;">
+      <h3>② AI予想・買い目の使い方</h3>
+      <pre style="font-family:inherit;font-size:12px;color:#cccccc;white-space:pre-wrap;line-height:1.7;margin:0;">1) ①競馬場を選択（中央/地方/特殊の3分類）
+2) ②レース番号を選択（1R〜12R、11R=メイン/12R=最終）
+   └ 任意：注目レースのクイック選択や「🔄外部から最新情報を取得」
+3) ③予算を選択（1,000〜10,000円のクイックボタン）
+4) ④馬場状態（良/稍重/重/不良）と距離区分をワンタップ指定
+   └ 学習データと一致する傾向を自動で予想に反映
+5) 「🎯この条件でAI予想を実行」→ 馬連/馬単/3連複/3連単と
+   確信度・★評価・100円単位の資金配分を表示
+6) 「📋買い目をコピー」でそのまま投票メモに貼り付け</pre>
+    </div>
+    <div class="card" style="margin-bottom:10px;">
+      <h3>③ 学習の記録と答え合わせ学習</h3>
+      <pre style="font-family:inherit;font-size:12px;color:#cccccc;white-space:pre-wrap;line-height:1.7;margin:0;">【AIに覚えさせる】
+ 出馬表・レース結果・攻略メモを貼り付けて「💾AIに覚えさせる」
+ → この端末（localStorage）にだけ保存されるので他人に見えない
+
+【📡 外部データ取得ステーション】
+ 対象（全場/大型/中央/地方/ばんえい）×範囲（直近予定/過去1週間結果/両方）
+ を選んで「📥読み込んでAIに保存」→ 自動で学習データ化
+
+【🏁 答え合わせ学習】
+ 予想後に実際の1〜3着を入力（自動取得も可）して保存
+ → 的中判定・収支計算＋「なぜ外れたか」の反省レッスンを自動生成
+ → 同じ場・条件の次回予想に自動反映される
+
+【📈 AI学習度グラフ】
+ 学習件数・的中実績から「Lv.」と5軸の得意分野・推移グラフが
+ あなた専用にリアルタイムで成長（端末ごとに形が違う）</pre>
+    </div>
+    <div class="card">
+      <h3>④ スマホをアプリ化（PWA）</h3>
+      <pre style="font-family:inherit;font-size:12px;color:#cccccc;white-space:pre-wrap;line-height:1.7;margin:0;">iPhone（Safari）：
+ 1) このページを開く → 下部の「共有」ボタン
+ 2) 「ホーム画面に追加」→ 追加
+ 3) ホーム画面の「競馬AI予想」アイコンから起動
+    → URLバーが消えて本物のアプリのように全画面表示
+
+Android（Chrome）：
+ 1) 右上「︙」メニュー →「ホーム画面に追加」
+ 2) 「追加」→ アイコンから全画面起動
+
+※データは端末内保存のため、機種変更時は「📚学習の記録」
+  下部の「🔄マイAIデータの引き継ぎ」でJSON書き出し→復元</pre>
+    </div>
+  </div>
+</div>
+<script src="app.js?v=20261120"></script>
 </body>
 </html>

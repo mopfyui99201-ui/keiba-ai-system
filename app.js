@@ -84,6 +84,10 @@ function setTab(tab) {
   window.scrollTo({top: 0});
 }
 function goHome() { setTab('home'); }
+function toggleManual() {
+  const el = document.getElementById('manual-overlay');
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
 function toggleAccordion(header, sectionId) {
   const content = document.getElementById(sectionId);
   const toggle = header.querySelector('.accordion-toggle');
