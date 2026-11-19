@@ -223,9 +223,12 @@ def to_ai_text(data):
     s = summarize(data)
     lines = ["【競馬AI学習データ " + data.get("fetched_at", "")[:10] + "】"]
     lines.append("■ 直近レース予定・注目ニュース")
+    def fmt(it):
+        note = it.get("note")
+        return "・" + it["title"] + ("［" + note + "］" if note else "") + "（" + it["source"] + "）"
     for it in (s["upcoming"] + s["news"])[:15]:
-        lines.append("・" + it["title"] + "（" + it["source"] + "）")
+        lines.append(fmt(it))
     lines.append("■ 過去1週間の主な結果・ニュース")
     for it in s["results"][:15]:
-        lines.append("・" + it["title"] + "（" + it["source"] + "）")
+        lines.append(fmt(it))
     return "\n".join(lines)

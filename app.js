@@ -2,7 +2,8 @@
 'use strict';
 
 const JRA_VENUES = ["東京","中山","京都","阪神","中京","新潟","福島","小倉","函館","札幌"];
-const NAR_VENUES = ["大井","川崎","船橋","浦和","門別","帯広(ばんえい)","盛岡","水沢","金沢","笠松","名古屋","園田","姫路","高知","佐賀"];
+const NAR_VENUES = ["大井","川崎","船橋","浦和","門別","盛岡","水沢","金沢","笠松","名古屋","園田","姫路","高知","佐賀"];
+const BANEI_VENUES = ["帯広(ばんえい)"];
 const VENUE_EVENTS = {
   "東京":["日本ダービー","天皇賞(秋)","ジャパンC","有馬記念"],"中山":["皐月賞","有馬記念","ホープフルS"],"京都":["菊花賞","天皇賞(春)","エリザベス女王杯"],"阪神":["桜花賞","宝塚記念","大阪杯"],
   "中京":["チャンピオンズC","名古屋大賞典"],"新潟":["新潟2歳S","新潟記念"],"福島":["福島記念","ラジオNIKKEI賞"],"小倉":["小倉記念","北九州記念"],"函館":["函館記念","函館2歳S"],"札幌":["札幌記念","札幌2歳S"],
@@ -86,23 +87,26 @@ function esc(s) {
 function buildVenues() {
   const jraGrid = document.getElementById('jra-venues');
   const narGrid = document.getElementById('nar-venues');
+  const baneiGrid = document.getElementById('banei-venues');
   if (!jraGrid || !narGrid) return;
   jraGrid.innerHTML = ''; narGrid.innerHTML = '';
-  [...JRA_VENUES, ...NAR_VENUES].forEach(v => {
+  if (baneiGrid) baneiGrid.innerHTML = '';
+  [...JRA_VENUES, ...NAR_VENUES, ...BANEI_VENUES].forEach(v => {
     const isJRA = JRA_VENUES.includes(v);
+    const isBanei = BANEI_VENUES.includes(v);
     const d = venueData[v] || {};
     const events = VENUE_EVENTS[v] || [];
     const mainEvent = events[0] || '通常開催';
     const allEvents = events.join(' / ') || 'なし';
-    const toggleOn = venueToggles[v] !== false;
-    const grid = isJRA ? jraGrid : narGrid;
+    const favOn = venueToggles[v] === true;
+    const grid = isJRA ? jraGrid : (isBanei ? baneiGrid : narGrid);
     const row = document.createElement('div');
     row.className = 'venue-row';
     row.innerHTML =
       '<span class="venue-name" data-v="' + esc(v) + '">' + esc(v) + '</span>' +
       '<span class="venue-event"><span class="ev-star' + (d.favorite ? ' on' : '') + '">★</span>' + esc(mainEvent) + '</span>' +
       '<span class="fav-star' + (d.favorite ? ' on' : '') + '" data-v="' + esc(v) + '">★</span>' +
-      '<div class="toggle' + (toggleOn ? ' active' : '') + '" data-v="' + esc(v) + '"></div>';
+      '<div class="toggle' + (favOn ? ' active' : '') + '" data-v="' + esc(v) + '"></div>';
     grid.appendChild(row);
     const detail = document.createElement('div');
     detail.className = 'venue-detail';
@@ -126,10 +130,11 @@ function venueAction(v, action) {
     venueData[v].favorite = !venueData[v].favorite;
     saveJSON('keiba_venue_data', venueData); buildVenues();
   } else if (action === 'toggle') {
-    venueToggles[v] = venueToggles[v] === false ? true : false;
+    venueToggles[v] = venueToggles[v] === true ? false : true;
     saveJSON('keiba_venue_toggles', venueToggles);
     const el = document.querySelector('.toggle[data-v="' + v + '"]');
-    if (el) el.classList.toggle('active', venueToggles[v] !== false);
+    if (el) el.classList.toggle('active', venueToggles[v] === true);
+    renderFavorites();
   } else if (action === 'save') {
     const input = document.getElementById('memo-input-' + v);
     if (!venueData[v]) venueData[v] = {};
@@ -153,6 +158,43 @@ function toggleVenueDetail(v) {
   const wasOpen = detail.classList.contains('open');
   document.querySelectorAll('.venue-detail.open').forEach(d => d.classList.remove('open'));
   if (!wasOpen) detail.classList.add('open');
+}
+
+/* ---------- お気に入り一覧 ---------- */
+function renderFavorites() {
+  const groups = [
+    ['fav-jra', JRA_VENUES],
+    ['fav-nar', NAR_VENUES],
+    ['fav-banei', BANEI_VENUES],
+  ];
+  groups.forEach(([id, venues]) => {
+    const box = document.getElementById(id);
+    if (!box) return;
+    const favs = venues.filter(v => venueToggles[v] === true);
+    if (!favs.length) { box.innerHTML = '<div class="fav-empty">お気に入りはまだありません（各競馬場のトグルをONにすると登録されます）</div>'; return; }
+    box.innerHTML = favs.map(v => {
+      const mainEvent = (VENUE_EVENTS[v] || [])[0] || 'メイン競走';
+      return '<div class="fav-item">' +
+        '<span class="fav-name">' + esc(v) + '</span>' +
+        '<span class="fav-event">' + esc(mainEvent) + '</span>' +
+        '<button class="go" onclick="goPredict(\'' + esc(v).replace(/'/g, "\\'") + '\')">🎯 予想する</button>' +
+        '<button class="unfav" onclick="venueAction(\'' + esc(v).replace(/'/g, "\\'") + '\', \'toggle\')">解除</button>' +
+        '</div>';
+    }).join('');
+  });
+}
+function goPredict(venue) {
+  const sel = document.getElementById('race-select');
+  if (!sel) return;
+  let label = venue + '11R メイン';
+  if (![...sel.options].some(o => o.value === label)) {
+    const opt = document.createElement('option');
+    opt.value = label; opt.textContent = '⭐ ' + label;
+    sel.appendChild(opt);
+  }
+  sel.value = label;
+  onRaceSelect();
+  setTab('predict');
 }
 
 /* ---------- G1カード ---------- */
@@ -445,14 +487,6 @@ function renderLearnList() {
   ).join('');
 }
 
-/* ---------- ばんえいメモ ---------- */
-function saveBaneiMemo() {
-  const v = document.getElementById('banei-memo').value.trim();
-  localStorage.setItem('keiba_banei_memo', v);
-  document.getElementById('banei-memo-view').textContent = v || '（メモなし）';
-  alert('メモを保存しました');
-}
-
 /* ---------- カウンター ---------- */
 const COUNT_BASE = 'https://countapi.mileshilliard.com/api/v1';
 const COUNT_KEY_TOTAL = 'keiba_elizabeth_viewer_total';
@@ -492,13 +526,10 @@ venueData = loadJSON('keiba_venue_data', {});
 venueToggles = loadJSON('keiba_venue_toggles', {});
 predictionsHistory = loadJSON('keiba_predictions', []);
 learnings = loadJSON('keiba_learnings', []);
-const baneiMemo = localStorage.getItem('keiba_banei_memo') || '';
-if (baneiMemo && document.getElementById('banei-memo-view')) {
-  document.getElementById('banei-memo-view').textContent = baneiMemo;
-}
 
 renderG1();
 buildVenues();
+renderFavorites();
 renderHistory();
 renderLearnList();
 onLearnCategoryChange();

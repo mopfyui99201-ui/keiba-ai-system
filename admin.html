@@ -245,16 +245,47 @@ function renderKeibaCards(d) {
         '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
         '<a href="' + escH(it.url) + '" target="_blank" rel="noopener" style="font-size:11px;color:#64d2ff;">情報元：' + escH(it.source) + '</a>' +
         (it.date ? '<span style="font-size:10px;color:#8e8e93;">' + escH(it.date) + '</span>' : '') +
-        '<button class="btn" style="padding:4px 8px;font-size:10px;margin-left:auto;">📋 AI学習用コピー</button>' +
-        '</div></div>';
+        (it.note ? '<span style="font-size:10px;color:#ffd60a;">メモ:' + escH(it.note) + '</span>' : '') +
+        '<span style="margin-left:auto;display:flex;gap:4px;">' +
+        '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="edit" data-url="' + escH(it.url) + '">✏️ 編集</button>' +
+        '<button class="btn" style="padding:4px 8px;font-size:10px;background:#b91c1c;" data-news="del" data-url="' + escH(it.url) + '">🗑️ 削除</button>' +
+        '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="copy" data-url="' + escH(it.url) + '">📋 AI学習用コピー</button>' +
+        '</span></div></div>';
     });
     html += '</div>';
   });
   box.innerHTML = html;
-  const btns = box.querySelectorAll('.btn');
-  let flat = [];
+  const flat = [];
   groups.forEach(([, items]) => { (items || []).slice(0, 12).forEach(it => flat.push(it)); });
-  btns.forEach((b, i) => { b.onclick = () => copyText(aiTextForItem(flat[i]), 'AI学習用'); });
+  box.querySelectorAll('button[data-news]').forEach(b => {
+    const url = b.dataset.url;
+    const act = b.dataset.news;
+    const it = flat.find(x => x.url === url);
+    if (!it) return;
+    if (act === 'copy') b.onclick = () => copyText(aiTextForItem(it), 'AI学習用');
+    else if (act === 'edit') b.onclick = () => editNewsItem(it);
+    else if (act === 'del') b.onclick = () => deleteNewsItem(it);
+  });
+}
+function editNewsItem(it) {
+  const title = prompt('タイトルを編集:', it.title || '');
+  if (title === null) return;
+  const note = prompt('メモ（任意・空欄で変更なし。削除は「-」と入力）:', it.note === undefined ? '' : it.note);
+  if (note === null) return;
+  fetch('/api/keiba-edit', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({url: it.url, title: title, note: note === '' ? undefined : (note === '-' ? '' : note)})})
+    .then(r => r.json()).then(d => {
+      if (d.success) { showResult('result-keiba', true, '編集を保存しました。「📤 閲覧者サイトへ反映」で公開できます'); loadKeibaNews(); }
+      else showResult('result-keiba', false, d);
+    }).catch(err => showResult('result-keiba', false, 'エラー: ' + err));
+}
+function deleteNewsItem(it) {
+  if (!confirm('このニュースを削除しますか？\n' + (it.title || it.url))) return;
+  fetch('/api/keiba-delete', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url: it.url})})
+    .then(r => r.json()).then(d => {
+      if (d.success) { showResult('result-keiba', true, '削除しました。残り ' + (d.remaining||0) + ' 件'); loadKeibaNews(); }
+      else showResult('result-keiba', false, d);
+    }).catch(err => showResult('result-keiba', false, 'エラー: ' + err));
 }
 function keibaUpdate() {
   showResult('result-keiba', true, '外部サイトから情報収集中...（数秒かかります）');

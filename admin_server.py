@@ -281,6 +281,56 @@ def keiba_news():
     except Exception as e:
         return jsonify({"success": False, "error": str(e), "items": data.get("items", [])})
 
+@app.route("/api/keiba-edit", methods=["POST"])
+def keiba_edit():
+    """収集アイテムのタイトル・メモを編集して保存。"""
+    body = request.get_json(silent=True) or {}
+    url = body.get("url")
+    title = body.get("title")
+    note = body.get("note")
+    if not url:
+        return jsonify({"success": False, "error": "url が必要です"})
+    data = read_json(RAW_JSON, None)
+    if not data or "items" not in data:
+        return jsonify({"success": False, "error": "収集データがありません"})
+    found = False
+    for it in data["items"]:
+        if it.get("url") == url:
+            if title is not None:
+                it["title"] = title
+                try:
+                    import keiba_fetch
+                    it["kind"] = keiba_fetch.classify(title)
+                except Exception:
+                    pass
+            if note is not None:
+                it["note"] = note.strip()
+            found = True
+            break
+    if not found:
+        return jsonify({"success": False, "error": "対象アイテムが見つかりません"})
+    write_json(RAW_JSON, data)
+    log("keiba-edit: " + url[:80])
+    return jsonify({"success": True})
+
+@app.route("/api/keiba-delete", methods=["POST"])
+def keiba_delete():
+    """収集アイテムを削除。"""
+    body = request.get_json(silent=True) or {}
+    url = body.get("url")
+    if not url:
+        return jsonify({"success": False, "error": "url が必要です"})
+    data = read_json(RAW_JSON, None)
+    if not data or "items" not in data:
+        return jsonify({"success": False, "error": "収集データがありません"})
+    before = len(data["items"])
+    data["items"] = [it for it in data["items"] if it.get("url") != url]
+    if len(data["items"]) == before:
+        return jsonify({"success": False, "error": "対象アイテムが見つかりません"})
+    write_json(RAW_JSON, data)
+    log("keiba-delete: " + url[:80])
+    return jsonify({"success": True, "remaining": len(data["items"])})
+
 @app.route("/api/keiba-ai-text")
 def keiba_ai_text():
     data = read_json(RAW_JSON, None)
