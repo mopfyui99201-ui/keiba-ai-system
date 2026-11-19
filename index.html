@@ -9,21 +9,26 @@
 body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; background: #1e1e1e; color: #ffffff; line-height: 1.5; padding: 12px; }
 .app-container { max-width: 560px; margin: 0 auto; }
 
-.title-bar { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px 10px 0 0; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
-.traffic { display: flex; gap: 6px; }
-.traffic i { width: 12px; height: 12px; border-radius: 50%; display: block; }
-.traffic .r { background: #ff5f57; } .traffic .y { background: #febc2e; } .traffic .g { background: #28c840; }
-.title-bar h1 { font-size: 14px; font-weight: 600; color: #cccccc; flex: 1; text-align: center; margin-right: 40px; }
+.app-bar { background: #16181d; border: 1px solid #2c2f36; border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; position: sticky; top: 8px; z-index: 10; }
+.back-btn { display: none; padding: 7px 12px; background: #2d2f36; border: 1px solid #3e3e42; border-radius: 8px; color: #64d2ff; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.back-btn:hover { background: #3e3e42; }
+.app-title { flex: 1; text-align: center; font-size: 16px; font-weight: 700; color: #ffffff; }
+.app-sub { font-size: 11px; color: #0a84ff; font-weight: 600; min-width: 60px; text-align: right; }
 
-.nav-bar { display: flex; gap: 4px; margin-bottom: 10px; background: #252526; border: 1px solid #3e3e42; border-top: none; border-radius: 0 0 8px 8px; padding: 6px; flex-wrap: wrap; }
-.nav-tab { flex: 1; min-width: 90px; padding: 9px 4px; background: #2d2d30; border: 1px solid #3e3e42; border-radius: 6px; color: #cccccc; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-.nav-tab:hover { background: #3e3e42; color: #ffffff; }
-.nav-tab.active { background: #0a5ea8; border-color: #0a5ea8; color: #ffffff; }
+.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.menu-card { background: linear-gradient(160deg, #2b2f3a 0%, #23262e 100%); border: 1px solid #3a3f4d; border-radius: 16px; padding: 18px 10px; text-align: center; cursor: pointer; transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s; }
+.menu-card:hover { transform: translateY(-2px); border-color: #0a84ff; box-shadow: 0 6px 18px rgba(10,132,255,0.15); }
+.menu-card:active { transform: scale(0.97); }
+.menu-card .m-emoji { font-size: 30px; display: block; margin-bottom: 6px; }
+.menu-card .m-name { font-size: 14px; font-weight: 700; color: #ffffff; }
+.menu-card .m-desc { font-size: 10px; color: #8e8e93; margin-top: 3px; line-height: 1.4; }
+.screen-title { font-size: 18px; font-weight: 700; color: #ffffff; margin: 4px 2px 12px; display: flex; align-items: center; gap: 8px; }
+.screen-title .st-badge { font-size: 11px; font-weight: 600; color: #0a84ff; background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.35); padding: 3px 8px; border-radius: 20px; }
 
-.tab-panel { display: none; margin-bottom: 10px; }
+.tab-panel { display: none; margin-bottom: 12px; }
 .tab-panel.active { display: block; }
 
-.card { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.card { background: #25282f; border: 1px solid #343945; border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.25); }
 .card h3 { font-size: 13px; color: #0a84ff; margin-bottom: 8px; }
 .card h4 { font-size: 12px; color: #ff9f0a; margin: 10px 0 6px; }
 
@@ -115,7 +120,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 .stars { color: #ffd60a; }
 .confidence { color: #0a84ff; font-weight: 600; }
 
-.latest-card { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.latest-card { background: #25282f; border: 1px solid #343945; border-radius: 14px; padding: 14px; margin-bottom: 12px; }
 .latest-card h3 { font-size: 13px; color: #0a84ff; margin-bottom: 4px; }
 .latest-time { font-size: 11px; color: #8e8e93; margin-bottom: 8px; }
 .latest-group { margin-bottom: 8px; }
@@ -146,28 +151,45 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 .fav-empty { font-size: 12px; color: #8e8e93; padding: 6px 0; }
 
 .view-count { text-align: center; font-size: 10px; color: #48484a; margin-top: 14px; }
-@media (max-width: 540px) { body { padding: 8px; } .app-container { max-width: 100%; } .venue-event { display: none; } .g1-grid { grid-template-columns: 1fr; } .nav-tab { min-width: 70px; font-size: 11px; } }
+@media (max-width: 540px) { body { padding: 8px; } .app-container { max-width: 100%; } .venue-event { display: none; } .g1-grid { grid-template-columns: 1fr; } .menu-card .m-name { font-size: 13px; } .app-title { font-size: 14px; } }
 </style>
 </head>
 <body>
 <div class="app-container">
 
-<div class="title-bar">
-  <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
-  <h1>競馬AI予想 - 閲覧用</h1>
+<div class="app-bar">
+  <button class="back-btn" id="back-btn" onclick="goHome()">＜ ホームへ戻る</button>
+  <div class="app-title">🏇 競馬AI予想</div>
+  <div class="app-sub" id="app-sub"></div>
 </div>
 
-<div class="nav-bar">
-  <div class="nav-tab active" data-tab="events" onclick="setTab('events')">🏆 大型イベント</div>
-  <div class="nav-tab" data-tab="jra" onclick="setTab('jra')">🏇 中央競馬</div>
-  <div class="nav-tab" data-tab="nar" onclick="setTab('nar')">🐎 地方競馬</div>
-  <div class="nav-tab" data-tab="banei" onclick="setTab('banei')">🛷 特殊競馬</div>
-  <div class="nav-tab" data-tab="predict" onclick="setTab('predict')">🎯 AI予想・買い目</div>
-  <div class="nav-tab" data-tab="learn" onclick="setTab('learn')">📚 学習の記録</div>
+<!-- ホーム画面（メニュー一覧） -->
+<div class="tab-panel active" id="panel-home">
+  <div class="menu-grid">
+    <div class="menu-card" onclick="setTab('events')"><span class="m-emoji">🏆</span><div class="m-name">大型イベント</div><div class="m-desc">G1・ビッグレース情報</div></div>
+    <div class="menu-card" onclick="setTab('jra')"><span class="m-emoji">🏇</span><div class="m-name">中央競馬</div><div class="m-desc">JRA全10場・攻略メモ</div></div>
+    <div class="menu-card" onclick="setTab('nar')"><span class="m-emoji">🐎</span><div class="m-name">地方競馬</div><div class="m-desc">南関東・各地競馬場</div></div>
+    <div class="menu-card" onclick="setTab('banei')"><span class="m-emoji">🛷</span><div class="m-name">特殊競馬</div><div class="m-desc">ばんえい・帯広</div></div>
+    <div class="menu-card" onclick="setTab('predict')"><span class="m-emoji">🎯</span><div class="m-name">AI予想・買い目</div><div class="m-desc">プルダウンで即予想</div></div>
+    <div class="menu-card" onclick="setTab('learn')"><span class="m-emoji">📚</span><div class="m-name">学習の記録</div><div class="m-desc">AIに覚えさせる</div></div>
+  </div>
+  <div class="target-card" style="margin-bottom:12px;">
+    <div class="title">🔥 本日の注目レース</div>
+    <div class="content" id="target-content">レースを選んで予想を実行してください</div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+      <span class="exp" id="target-exp">期待度 -</span>
+      <span class="stars" id="target-stars"></span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>⭐ お気に入り登録一覧</h3>
+    <div id="fav-home"></div>
+  </div>
 </div>
 
 <!-- 1. 大型イベント -->
-<div class="tab-panel active" id="panel-events">
+<div class="tab-panel" id="panel-events">
+  <div class="screen-title">🏆 大型イベント<span class="st-badge">G1・ビッグレース</span></div>
   <div class="card">
     <h3>🏆 年間ビッグレース（G1・メインイベント）</h3>
     <div class="g1-grid" id="g1-grid"></div>
@@ -190,6 +212,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <!-- 2. 中央競馬 -->
 <div class="tab-panel" id="panel-jra">
+  <div class="screen-title">🏇 中央競馬<span class="st-badge">JRA全10場</span></div>
   <div class="card">
     <h3>🏇 JRA 公式リンク</h3>
     <div class="link-list">
@@ -218,6 +241,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <!-- 3. 地方競馬 -->
 <div class="tab-panel" id="panel-nar">
+  <div class="screen-title">🐎 地方競馬<span class="st-badge">南関東・各地</span></div>
   <div class="card">
     <h3>🐎 地方競馬（NAR）公式リンク</h3>
     <div class="link-list">
@@ -245,6 +269,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <!-- 4. 特殊競馬 -->
 <div class="tab-panel" id="panel-banei">
+  <div class="screen-title">🛷 特殊競馬（ばんえい）<span class="st-badge">帯広</span></div>
   <div class="accordion-item">
     <div class="accordion-header active" onclick="toggleAccordion(this, 'banei-section')">
       <span>特殊競馬場（ばんえい・帯広）</span><span class="accordion-toggle">▲</span>
@@ -291,15 +316,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <!-- 5. AI予想・買い目 -->
 <div class="tab-panel" id="panel-predict">
-  <div class="target-card">
-    <div class="title">🔥 本日の狙い目</div>
-    <div class="content" id="target-content">レースを選んで予想を実行してください</div>
-    <div style="display:flex;justify-content:space-between;margin-top:4px;">
-      <span class="exp" id="target-exp">期待度 -</span>
-      <span class="stars" id="target-stars"></span>
-    </div>
-  </div>
-
+  <div class="screen-title">🎯 AI予想・買い目<span class="st-badge">プルダウンで即予想</span></div>
   <div class="card">
     <h3>🎯 AI予想・買い目</h3>
     <div class="field">
@@ -363,6 +380,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
 
 <!-- 6. 学習の記録 -->
 <div class="tab-panel" id="panel-learn">
+  <div class="screen-title">📚 学習の記録<span class="st-badge">AIに覚えさせる</span></div>
   <div class="card">
     <h3>📚 AIに覚えさせる（学習登録）</h3>
     <p style="font-size:11px;color:#8e8e93;margin-bottom:10px;">レース結果・出馬表・攻略メモを貼り付けて保存すると、AI予想の精度に反映されます。</p>

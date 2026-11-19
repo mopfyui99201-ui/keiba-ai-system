@@ -59,12 +59,24 @@ function loadJSON(key, fb) {
 }
 function saveJSON(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-/* ---------- タブ・アコーディオン ---------- */
+/* ---------- 画面遷移（ホーム＋各専用画面） ---------- */
+const SCREEN_TITLES = {
+  home: '', events: '大型イベント', jra: '中央競馬', nar: '地方競馬',
+  banei: '特殊競馬', predict: 'AI予想・買い目', learn: '学習の記録',
+};
 function setTab(tab) {
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-  if (tab === 'predict') document.getElementById('predict-section')?.scrollIntoView({behavior:'smooth', block:'nearest'});
+  tab = tab || 'home';
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + tab);
+  });
+  const isHome = (tab === 'home');
+  const back = document.getElementById('back-btn');
+  if (back) back.style.display = isHome ? 'none' : 'inline-block';
+  const sub = document.getElementById('app-sub');
+  if (sub) sub.textContent = isHome ? '' : (SCREEN_TITLES[tab] || '');
+  window.scrollTo({top: 0});
 }
+function goHome() { setTab('home'); }
 function toggleAccordion(header, sectionId) {
   const content = document.getElementById(sectionId);
   const toggle = header.querySelector('.accordion-toggle');
@@ -167,6 +179,25 @@ function renderFavorites() {
     ['fav-nar', NAR_VENUES],
     ['fav-banei', BANEI_VENUES],
   ];
+  const allFavs = [...JRA_VENUES, ...NAR_VENUES, ...BANEI_VENUES].filter(v => venueToggles[v] === true);
+  const homeBox = document.getElementById('fav-home');
+  if (homeBox) {
+    if (!allFavs.length) {
+      homeBox.innerHTML = '<div class="fav-empty">お気に入りはまだありません（各競馬場のトグルをONにすると登録されます）</div>';
+    } else {
+      homeBox.innerHTML = allFavs.map(v => {
+        const mainEvent = (VENUE_EVENTS[v] || [])[0] || 'メイン競走';
+        const genre = JRA_VENUES.includes(v) ? '🏇' : (BANEI_VENUES.includes(v) ? '🛷' : '🐎');
+        return '<div class="fav-item">' +
+          '<span style="font-size:13px;">' + genre + '</span>' +
+          '<span class="fav-name">' + esc(v) + '</span>' +
+          '<span class="fav-event">' + esc(mainEvent) + '</span>' +
+          '<button class="go" onclick="goPredict(\'' + esc(v).replace(/'/g, "\\'") + '\')">🎯 予想する</button>' +
+          '<button class="unfav" onclick="venueAction(\'' + esc(v).replace(/'/g, "\\'") + '\', \'toggle\')">解除</button>' +
+          '</div>';
+      }).join('');
+    }
+  }
   groups.forEach(([id, venues]) => {
     const box = document.getElementById(id);
     if (!box) return;
