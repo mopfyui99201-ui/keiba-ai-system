@@ -1,5 +1,42 @@
 # HANDOVER.md - keiba-elizabeth-app 引き継ぎメモ
 
+## 2026-11-19（夜）第3作業：5+1機能追加（公開切替・カウンター・情報収集・同期）
+
+### 追加機能
+1. **Web公開/停止スイッチ**（admin.html + admin_server.py）
+   - `/api/web-status` `GET`、`/api/web-unpublish` `POST`（index.html→index.html.bak退避後メンテナンスHTMLへ差替＋git push）、`/api/web-publish` `POST`（bakから復元＋push）
+   - メンテナンスHTMLは60秒自動リロード付きのシンプル待機画面
+   - admin.htmlにステータス表示・公開/停止ボタン・公開URLリンク＋コピーボタン
+2. **アクセスカウンター**：無料API `countapi.mileshilliard.com`（キー: `keiba_elizabeth_viewer_total` と日別 `..._YYYYMMDD`）。index.htmlがページ表示時にhit、admin.htmlは `/api/stats` で累計/本日を表示。閲覧画面下部にも小さく表示
+3. **競馬情報更新ボタン** `/api/keiba-update`：新規 `keiba_fetch.py` が JRAニュース(Shift_JIS HTML)・netkeiba RSS・地方競馬(keiba.go.jp)・ばんえいを収集→`data/keiba_latest.json`保存。RSS不通のためHTMLスクレイピング方式。失敗ソースはerrorsに記録し継続
+4. **直近レース＆過去1週間結果カード**：admin.htmlに3グループ（直近予定/過去結果/その他ニュース）でカード表示、各項目に情報元リンク・日付・「📋 AI学習用コピー」ボタン
+5. **AI学習用テキスト**：`/api/keiba-ai-text` で全体まとめテキスト生成、admin.htmlの「全体コピー」ボタン＋閲覧サイト側にも表示
+6. **📤 閲覧サイトへ一括反映** `/api/sync-viewer`：収集データを `data/latest_keiba.json` に整形保存→自動git push→GitHub Pagesに反映。index.htmlは起動時に同JSONをfetchして「📢 最新の競馬情報」カード（更新日時・3グループ一覧・AI学習テキスト）を表示
+
+### テスト結果（全て実測OK）
+- `/api/web-status` 200、unpublish→publish往復でメンテナンス⇔復元を確認（pushも成功: cb48f72/26793cc）
+- `/api/keiba-update`：71件取得（upcoming 15 / results 4 / news 52、ばんえいのみ0件）
+- `/api/stats` `/api/keiba-news` `/api/keiba-ai-text` `/api/sync-viewer` 全て200・正常
+- JS: node --check 両HTML OK、Python: py_compile OK
+
+### 変更ファイル
+- 新規: `keiba_fetch.py`（情報収集モジュール）
+- 変更: `admin_server.py`（+158行のAPI群）、`admin.html`（公開切替/収集/同期UI）、`index.html`（カウンター＋最新情報カード）
+- `.gitignore`: `index.html.bak`, `data/keiba_latest.json`, `venv/` 追加。`admin.log` をgit管理から除外
+
+### 使い方
+1. `python admin_server.py`（venv）で http://127.0.0.1:8765 を開く
+2. 「🔄 競馬情報を最新に更新」→ 結果カード確認
+3. 「📤 閲覧者サイトへ最新情報を反映」→ 数分後に公開URLへ反映
+4. 公開停止時は「⛔ 停止する」でメンテナンス画面に（「🌐 公開する」で即復元）
+
+### 残課題・注意
+- ばんえい情報源は0件（keiba.go.jp/baneiが404）。必要なら専用ソース追加
+- カウンターは外部無料API依存（障害時は0表示だが本体機能に影響なし）
+- 「競馬情報を更新」は未pushの生データ、閲覧サイトに出るのはsync後の `latest_keiba.json`
+
+---
+
 ## 2026-11-19（夜）GitHub Pages 公開URL確定
 
 - **公開URL**: https://mopfyui99201-ui.github.io/keiba-ai-system/

@@ -69,3 +69,24 @@
 #### 効率的なコマンド（追記）
 - JS構文チェック: `python3 -c "import re;print(re.search(r'<script>(.*?)</script>',open('index.html').read(),re.S).group(1))" > /tmp/x.js && node --check /tmp/x.js`
 - .appのrun確認: `zsh -n "~/Desktop/xxx.app/Contents/MacOS/run"`
+
+### 2026/11/19 夜(2) - 公開切替・カウンター・情報収集での学び
+
+#### 競馬サイトのスクレイピング実情
+- JRAはRSS無し・`Shift_JIS(cp932)`エンコード。`<h2>日付</h2>` + `<a href="/news/YYYYMM/ID.html">` + `<div class="txt">タイトル</div>` の構造で抽出可能
+- netkeibaは `https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba` にRSSあり（ページHTMLには記事リンクがJS描画で出ない）
+- keiba.go.jp（NAR/ばんえい共通）は `/topics/YYYY/MM/xxx.html` 形式。`/banei/` は404で専用ページ無し
+- 文字コードはレスポンスヘッダと`<meta charset>`の両方を見る（JRAはcp932指定）
+
+#### 無料アクセスカウンター
+- countapi.xyzは死滅。代替: `countapi.mileshilliard.com/api/v1/{hit|get}/{key}`（CORS可・登録不要）
+- 「本日」カウントはキー名に日付を含める方式（`..._YYYYMMDD`）で実現。閲覧側JSと管理側Pythonで同じキー生成ロジックを持つ
+- GitHub Pagesは静的なのでサーバー側カウント不可→外部API一択
+
+#### 公開/メンテナンス切替の安全設計
+- index.htmlを直接上書きせず `.bak` へ退避→復元方式。メンテナンス判定はHTML内の特徴文字列で検出
+- git commit/pushはsubprocess経由。サーバー側からのpushがそのまま「公開」になる設計と相性が良い
+
+#### その他
+- fetchの`mode:'cors'`は外部API呼出で必要（付けなくても動くことが多いが明示が安全）
+- JSONデータをPagesで配信する場合 `?t=Date.now()` のキャッシュバスター必須（PagesはCDNキャッシュが強い）
