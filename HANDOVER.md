@@ -199,3 +199,20 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
   - 収集エリア下部「⚙️ ノイズフィルタ設定」にNG/採用ワードを1行1語で編集・保存するUI
   - 一覧上部に「🚫 ノイズ自動除外: N件」を表示
 - 検証: update 71件中6件をノイズ除外→表示65件。filter-config POST保存→ファイル反映確認
+
+## 3分類×4ジャンル自動仕分け ＋ レース結果詳細機能
+- `keiba_fetch.py`
+  - `classify_genre()`: large_event(18種のG1/ビッグレース名) / jra(JRA場名・jra.go.jp・race.netkeiba) / local(NAR場名・keiba.go.jp・nar.netkeiba) / banei(ばんえい/帯広/輓馬)。帯広はbanei優先でlocalと重複しない
+  - `summarize()` が `sections`（upcoming/result/news × 4ジャンル入れ子）を返す。従来のフラット配列も互換維持
+  - `parse_result_text()`: 貼り付けテキストから開催日/場/R/レース名/馬場状態/1〜18着（枠・馬番・馬名・騎手・タイム・上り3F）を構造化。`_summary_from_entries()` が上り最速・先行力から傾向メモ自動生成
+  - `fetch_result_detail()` / `enrich_result_details()`: netkeiba result.html・JRA accessS.html のURLを持つ収集アイテムに詳細を自動付与（最大8件・失敗時スキップ）
+- `admin_server.py`
+  - `/api/keiba-add-result`: 貼り付けテキスト→解析→keiba_latest.jsonへkind=resultで追加（manual://URL）
+  - `keiba-update` は手動貼付アイテム(manual://)と編集メモ(note)を再収集後も保全するよう修正（従来は上書きで消えていた）
+- `admin.html`
+  - 収集エリアに「📋 レース結果テキスト貼り付け→自動まとめ」UI追加
+  - 一覧を3セクション×4ジャンルのサブグループ表示に変更（チェック/編集/削除/コピー/リンクは全て維持）
+  - `detail`付きカードは🥇🥈🥉着順＋💡AI傾向メモをカード内に表示。AI学習コピーにも着順・傾向を含める
+- `index.html` / `app.js`
+  - 各タブ（🏆大型/🏇中央/🐎地方/🛷特殊）にジャンル別「最新情報」カードを追加。同期JSONのgenreで自動振り分け、結果アイテムは上位3着サマリーも表示
+- 検証: add-result(東京→large_event/大井→local)→update再実行でもmanual項目保全→sections集計確認→sync-viewerで公開push済み
