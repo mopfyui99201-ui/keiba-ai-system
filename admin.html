@@ -226,21 +226,33 @@ function copyText(text, label) {
     ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
   }
 }
+const KIND_LABELS = {upcoming:'直近のレース予定', result:'過去1週間のレース結果', news:'馬・騎手・関連ニュース'};
 function renderKeibaCards(d) {
   const box = document.getElementById('keiba-cards');
   if (!d || (!d.upcoming && !d.results && !d.news)) { box.innerHTML = ''; return; }
   lastKeibaData = d;
-  let html = '';
   const groups = [
-    ['🏇 直近の注目レース予定・ニュース', d.upcoming, '#30d158'],
-    ['🏁 過去1週間の主なレース結果', d.results, '#ff9f0a'],
-    ['📰 その他の最新ニュース', d.news, '#0a84ff'],
+    ['upcoming', '📅 直近のレース予定・出走情報', d.upcoming, '#30d158'],
+    ['result',   '🏆 過去1週間の主なレース結果', d.results, '#ff9f0a'],
+    ['news',     '📰 馬・騎手・関連ニュース',     d.news, '#0a84ff'],
   ];
-  groups.forEach(([label, items, color]) => {
+  const totalCount = groups.reduce((n, [, , items]) => n + (items ? items.length : 0), 0);
+  let html = '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">' +
+    '<button class="btn" style="padding:6px 10px;font-size:11px;" onclick="selectAllNews(true)">☑️ すべて選択</button>' +
+    '<button class="btn" style="padding:6px 10px;font-size:11px;" onclick="selectAllNews(false)">選択解除</button>' +
+    '<button class="btn" style="padding:6px 10px;font-size:11px;background:#b91c1c;" onclick="deleteSelectedNews()">🗑️ 選択した項目をまとめて削除（<span id="sel-count">0</span>件）</button>' +
+    '<button class="btn" style="padding:6px 10px;font-size:11px;background:#991b1b;" onclick="clearAllNews()">🗑️ 収集データをすべて一括消去</button>' +
+    '</div>';
+  groups.forEach(([kind, label, items, color]) => {
     if (!items || !items.length) return;
-    html += '<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:' + color + ';margin-bottom:6px;">' + label + '</div>';
-    items.slice(0, 12).forEach((it, i) => {
-      html += '<div class="news-item" style="background:#252526;border:1px solid #3e3e42;border-radius:6px;padding:8px;margin-bottom:6px;">' +
+    html += '<div class="news-group" data-kind="' + kind + '" style="margin-bottom:14px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+      '<div style="font-size:12px;font-weight:700;color:' + color + ';">' + label + '（' + items.length + '件）</div>' +
+      '<button class="btn" style="padding:4px 10px;font-size:10px;background:#991b1b;" onclick="clearKindNews(\'' + kind + '\')">🗑️ この項目を一括消去</button></div>';
+    items.slice(0, 50).forEach(it => {
+      html += '<div class="news-item" data-url="' + escH(it.url) + '" style="background:#252526;border:1px solid #3e3e42;border-radius:6px;padding:8px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;">' +
+        '<input type="checkbox" class="news-check" data-url="' + escH(it.url) + '" style="margin-top:3px;transform:scale(1.2);" onchange="updateSelCount()">' +
+        '<div style="flex:1;">' +
         '<div style="font-size:12px;color:#fff;margin-bottom:4px;">' + escH(it.title) + '</div>' +
         '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
         '<a href="' + escH(it.url) + '" target="_blank" rel="noopener" style="font-size:11px;color:#64d2ff;">情報元：' + escH(it.source) + '</a>' +
@@ -250,13 +262,14 @@ function renderKeibaCards(d) {
         '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="edit" data-url="' + escH(it.url) + '">✏️ 編集</button>' +
         '<button class="btn" style="padding:4px 8px;font-size:10px;background:#b91c1c;" data-news="del" data-url="' + escH(it.url) + '">🗑️ 削除</button>' +
         '<button class="btn" style="padding:4px 8px;font-size:10px;" data-news="copy" data-url="' + escH(it.url) + '">📋 AI学習用コピー</button>' +
-        '</span></div></div>';
+        '</span></div></div></div>';
     });
+    if (items.length > 50) html += '<div style="font-size:11px;color:#8e8e93;padding:4px 0;">…他 ' + (items.length - 50) + ' 件（先頭50件のみ表示）</div>';
     html += '</div>';
   });
   box.innerHTML = html;
   const flat = [];
-  groups.forEach(([, items]) => { (items || []).slice(0, 12).forEach(it => flat.push(it)); });
+  groups.forEach(([, , items]) => { (items || []).forEach(it => flat.push(it)); });
   box.querySelectorAll('button[data-news]').forEach(b => {
     const url = b.dataset.url;
     const act = b.dataset.news;
@@ -266,6 +279,44 @@ function renderKeibaCards(d) {
     else if (act === 'edit') b.onclick = () => editNewsItem(it);
     else if (act === 'del') b.onclick = () => deleteNewsItem(it);
   });
+  updateSelCount();
+}
+function updateSelCount() {
+  const n = document.querySelectorAll('#keiba-cards .news-check:checked').length;
+  const el = document.getElementById('sel-count');
+  if (el) el.textContent = n;
+}
+function selectAllNews(on) {
+  document.querySelectorAll('#keiba-cards .news-check').forEach(c => { c.checked = on; });
+  updateSelCount();
+}
+function deleteSelectedNews() {
+  const urls = [...document.querySelectorAll('#keiba-cards .news-check:checked')].map(c => c.dataset.url);
+  if (!urls.length) { alert('削除する項目をチェックしてください'); return; }
+  if (!confirm(urls.length + '件をまとめて削除しますか？')) return;
+  fetch('/api/keiba-delete-bulk', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls})})
+    .then(r => r.json()).then(d => {
+      if (d.success) { showResult('result-keiba', true, d.removed + '件を削除しました。残り ' + d.remaining + ' 件'); loadKeibaNews(); }
+      else showResult('result-keiba', false, d);
+    }).catch(err => showResult('result-keiba', false, 'エラー: ' + err));
+}
+function clearKindNews(kind) {
+  const label = KIND_LABELS[kind] || kind;
+  if (!confirm('「' + label + '」をすべて削除しますか？この操作は元に戻せません。')) return;
+  fetch('/api/keiba-clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({kind})})
+    .then(r => r.json()).then(d => {
+      if (d.success) { showResult('result-keiba', true, d.removed + '件を削除しました'); loadKeibaNews(); }
+      else showResult('result-keiba', false, d);
+    }).catch(err => showResult('result-keiba', false, 'エラー: ' + err));
+}
+function clearAllNews() {
+  if (!confirm('収集データを「すべて」削除しますか？この操作は元に戻せません。')) return;
+  if (!confirm('本当に全件削除しますか？（最終確認）')) return;
+  fetch('/api/keiba-clear', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})})
+    .then(r => r.json()).then(d => {
+      if (d.success) { showResult('result-keiba', true, '全件削除しました（' + d.removed + '件）'); loadKeibaNews(); }
+      else showResult('result-keiba', false, d);
+    }).catch(err => showResult('result-keiba', false, 'エラー: ' + err));
 }
 function editNewsItem(it) {
   const title = prompt('タイトルを編集:', it.title || '');

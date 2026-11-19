@@ -175,3 +175,13 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
 - index.html の重複コード整理
 - admin.html の restore UI 修正
 - 変更のコミット＆push（admin_server.py の /api/git-push または手動）
+
+## 2025-xx-xx 管理画面：一括削除機能追加
+- `admin_server.py`
+  - `POST /api/keiba-delete-bulk` … `{urls:[...]}` をまとめて削除し即保存
+  - `POST /api/keiba-clear` … `{kind:"upcoming"|"result"|"news"|null}` でカテゴリ別/全件一括消去
+- `admin.html`
+  - 各カード左上にチェックボックス、「すべて選択/選択解除」「選択した項目をまとめて削除（N件）」ボタン
+  - 各セクション見出し右に「🗑️ この項目を一括消去」、全体上部に「🗑️ 収集データをすべて一括消去」（confirm×2で誤操作防止）
+  - 表示は各セクション最大50件（超過分は件数表示のみ）
+- 検証: update 71件→bulk削除3件→kind= news 一括消去49件→再updateで71件復元、全て即保存

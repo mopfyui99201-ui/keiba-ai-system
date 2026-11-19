@@ -331,6 +331,41 @@ def keiba_delete():
     log("keiba-delete: " + url[:80])
     return jsonify({"success": True, "remaining": len(data["items"])})
 
+@app.route("/api/keiba-delete-bulk", methods=["POST"])
+def keiba_delete_bulk():
+    """複数URLをまとめて削除。"""
+    body = request.get_json(silent=True) or {}
+    urls = set(body.get("urls") or [])
+    if not urls:
+        return jsonify({"success": False, "error": "urls が必要です"})
+    data = read_json(RAW_JSON, None)
+    if not data or "items" not in data:
+        return jsonify({"success": False, "error": "収集データがありません"})
+    before = len(data["items"])
+    data["items"] = [it for it in data["items"] if it.get("url") not in urls]
+    removed = before - len(data["items"])
+    write_json(RAW_JSON, data)
+    log(f"keiba-delete-bulk: {removed}件削除")
+    return jsonify({"success": True, "removed": removed, "remaining": len(data["items"])})
+
+@app.route("/api/keiba-clear", methods=["POST"])
+def keiba_clear():
+    """カテゴリ別(kind)または全体の一括消去。kind: upcoming/result/news/None=全削除"""
+    body = request.get_json(silent=True) or {}
+    kind = body.get("kind")
+    data = read_json(RAW_JSON, None)
+    if not data or "items" not in data:
+        return jsonify({"success": False, "error": "収集データがありません"})
+    before = len(data["items"])
+    if kind in ("upcoming", "result", "news"):
+        data["items"] = [it for it in data["items"] if it.get("kind") != kind]
+    else:
+        data["items"] = []
+    removed = before - len(data["items"])
+    write_json(RAW_JSON, data)
+    log(f"keiba-clear: kind={kind} {removed}件削除")
+    return jsonify({"success": True, "removed": removed, "remaining": len(data["items"])})
+
 @app.route("/api/keiba-ai-text")
 def keiba_ai_text():
     data = read_json(RAW_JSON, None)
