@@ -50,8 +50,11 @@ let predictionsHistory = [];
 let learnings = [];
 let latestData = null;
 let windowLastTickets = '';
+let windowLastPred = null;
 let selectedRaceName = '';
 let editingLearnIndex = -1;
+let reflections = [];
+let stationItems = [];
 
 /* ---------- 状態保存 ---------- */
 function loadJSON(key, fb) {
@@ -74,6 +77,7 @@ function setTab(tab) {
   if (back) back.style.display = isHome ? 'none' : 'inline-block';
   const sub = document.getElementById('app-sub');
   if (sub) sub.textContent = isHome ? '' : (SCREEN_TITLES[tab] || '');
+  if (tab === 'learn') renderLearningGraph();
   window.scrollTo({top: 0});
 }
 function goHome() { setTab('home'); }
@@ -512,7 +516,25 @@ function learningBoostMap(raceName) {
   const texts = matched.map(l => (l.race ? l.race + ' ' : '') + (l.text || '')).join('\n');
   const nums = texts.match(/(?<!\d)(\d{1,2})(?!\d)/g) || [];
   nums.forEach(n => { const v = parseInt(n, 10); if (v >= 1 && v <= 18) boost[v] = (boost[v] || 0) + 1; });
+  // 答え合わせ結果（同じ競馬場・関連レースの実際の3着内馬）もブースト
+  const venue = venueOfRace(raceName);
+  reflections.forEach(r => {
+    if (venue && r.venue !== venue) return;
+    if (raceName && r.race && !(raceName.includes(r.race) || r.race.includes(raceName))) return;
+    (r.top3 || []).forEach(n => { if (n >= 1 && n <= 18) boost[n] = (boost[n] || 0) + 2; });
+  });
   return boost;
+}
+function venueOfRace(raceName) {
+  if (!raceName) return '';
+  const all = [...JRA_VENUES, ...NAR_VENUES, ...BANEI_VENUES];
+  return all.find(v => raceName.includes(v)) || '';
+}
+function categoryOfVenue(venue) {
+  if (JRA_VENUES.includes(venue)) return 'jra';
+  if (NAR_VENUES.includes(venue)) return 'nar';
+  if (BANEI_VENUES.includes(venue)) return 'banei';
+  return 'g1';
 }
 function hashSeed(str) {
   let h = 0;
@@ -590,6 +612,15 @@ function runPredict() {
   document.getElementById('target-stars').textContent = starStr(conf);
 
   windowLastTickets = 'レース: ' + raceName + (fallback ? '（参考予想）' : '') + '\n馬連 ' + t1 + ' (' + w1 + '円)\n馬単 ' + t2.replace(',', '→') + ' (' + w2 + '円)\n3連複 ' + t3 + ' (' + w3 + '円)\n3連単 ' + tan + ' (' + w4 + '円)';
+  windowLastPred = {
+    raceName, venue: venueOfRace(raceName), budget, fallback,
+    top: [top[0].umaban, top[1].umaban, top[2].umaban],
+    next3: next3.map(h => h.umaban),
+    umaren: [top[0].umaban, top[1].umaban],
+    umatan: [top[0].umaban, top[1].umaban, top[2].umaban],
+    sanrenpuku: [top[0].umaban, top[1].umaban, top[2].umaban],
+    sanrentan: [top[0].umaban, top[1].umaban, top[2].umaban],
+  };
 }
 
 /* ---------- 買い目コピー・結果記録 ---------- */
@@ -691,6 +722,366 @@ function renderLearnList() {
   ).join('');
 }
 
+/* ---------- 答え合わせ（予想 vs 実結果） ---------- */
+function answerCheck() {
+  if (!windowLastPred) { alert('先にAI予想を実行してください'); return; }
+  const area = document.getElementById('result-input-area');
+  area.style.display = 'block';
+  // 同期データから該当レースの結果を自動取得を試みる
+  const key = (windowLastPred.raceName || '').replace(/（メイン）|\(メイン\)|最終/g, '').trim();
+  const words = key.split(/\s+/).filter(w => w.length >= 2);
+  let found = null;
+  if (latestData && latestData.results) {
+    found = latestData.results.find(it => {
+      const t = it.title || '';
+      return words.length && words.some(w => t.includes(w)) && it.detail && it.detail.entries && it.detail.entries.length >= 3;
+    });
+  }
+  if (found) {
+    const e = found.detail.entries;
+    const byRank = r => (e.find(x => x.rank === r) || {});
+    document.getElementById('in-1st').value = byRank(1).umaban || '';
+    document.getElementById('in-2nd').value = byRank(2).umaban || '';
+    document.getElementById('in-3rd').value = byRank(3).umaban || '';
+    alert('📥 同期データから結果を自動入力しました。内容を確認して「💾 結果を保存」を押してください');
+  } else {
+    alert('自動取得できませんでした。実際の1着〜3着の馬番と払戻金額を入力してください');
+  }
+}
+function saveAnswerCheck() {
+  const a1 = parseInt(document.getElementById('in-1st').value, 10);
+  const a2 = parseInt(document.getElementById('in-2nd').value, 10);
+  const a3 = parseInt(document.getElementById('in-3rd').value, 10);
+  const payout = parseInt((document.getElementById('in-payout').value || '0').replace(/[^\d]/g, ''), 10) || 0;
+  if (!(a1 > 0 && a2 > 0 && a3 > 0)) { alert('1着〜3着の馬番を入力してください'); return; }
+  const pred = windowLastPred;
+  if (!pred) { alert('先にAI予想を実行してください'); return; }
+  const invested = pred.budget || 3000;
+  const p = pred.top;
+  const hits = {
+    umaren:    (a1 === p[0] && a2 === p[1]) || (a1 === p[1] && a2 === p[0]),
+    umatan:    a1 === p[0] && a2 === p[1],
+    sanrenpuku: [a1,a2,a3].sort((x,y)=>x-y).join(',') === [...p].sort((x,y)=>x-y).join(','),
+    sanrentan:  a1 === p[0] && a2 === p[1] && a3 === p[2],
+  };
+  const anyHit = Object.values(hits).some(Boolean);
+  const profit = payout - invested;
+  // 反省レッスン自動生成
+  const lessons = [];
+  if (a1 !== p[0]) lessons.push('本命馬(' + p[0] + '番)が1着にならず→人気馬過剰評価の補正が必要');
+  if (![a1,a2,a3].some(n => p.includes(n))) lessons.push('3着内に予想馬なし→穴馬・差し馬の重み付けを強化');
+  else if (a3 === p[2] && a1 !== p[0]) lessons.push('3着は的中圏内→上位評価は概ね正しく着順の入れ替わりに注意');
+  if (anyHit) lessons.push('的中あり→この予想パターンを継続学習');
+  if (!lessons.length) lessons.push('僅差の結果→微調整レベル');
+  const lesson = lessons.join('／');
+  const rec = {
+    id: Date.now(), date: new Date().toISOString(),
+    race: pred.raceName, venue: pred.venue || venueOfRace(pred.raceName),
+    predTop3: p, actualTop3: [a1,a2,a3], invested, payout, profit,
+    hits, anyHit, lesson,
+  };
+  reflections.push(rec);
+  saveJSON('keiba_reflections', reflections);
+  // 学習データとしても登録（同場・同条件の予想に反映）
+  const cat = categoryOfVenue(rec.venue) || 'jra';
+  learnings.push({
+    id: Date.now() + 1, category: cat, categoryLabel: LEARN_CATEGORIES[cat] ? LEARN_CATEGORIES[cat].label : cat,
+    venue: rec.venue || '（指定なし）', race: rec.race,
+    text: '【答え合わせ ' + new Date().toLocaleDateString('ja-JP') + '】実際 ' + a1 + '→' + a2 + '→' + a3 + '着 / ' + lesson + (payout ? ' / 払戻' + payout + '円' : ''),
+    date: new Date().toISOString(),
+  });
+  saveJSON('keiba_learnings', learnings);
+  predictionsHistory.push({date: new Date().toISOString(), '1st': String(a1), '2nd': String(a2), '3rd': String(a3), tickets: windowLastTickets, payout});
+  saveJSON('keiba_predictions', predictionsHistory);
+  renderLearnList(); renderHistory(); renderLearningGraph();
+  const hitTxt = [hits.umaren && '馬連', hits.umatan && '馬単', hits.sanrenpuku && '3連複', hits.sanrentan && '3連単'].filter(Boolean).join('・') || '不的中';
+  alert((anyHit ? '🎉 的中！（' + hitTxt + '）' : '😢 不的中') + '\n収支: ' + (profit >= 0 ? '+' : '') + profit + '円\n💡 ' + lesson);
+  ['in-1st','in-2nd','in-3rd','in-payout'].forEach(id => document.getElementById(id).value = '');
+}
+function pnlSummary() {
+  const invested = reflections.reduce((s,r) => s + (r.invested || 0), 0);
+  const payout = reflections.reduce((s,r) => s + (r.payout || 0), 0);
+  const hits = reflections.filter(r => r.anyHit).length;
+  const n = reflections.length;
+  return {
+    invested, payout, profit: payout - invested,
+    hitRate: n ? Math.round(hits / n * 100) : 0,
+    recovery: invested ? Math.round(payout / invested * 100) : 0,
+    count: n,
+  };
+}
+
+/* ---------- 外部データ取得・AI学習ステーション ---------- */
+const STATION_VENUES = [...JRA_VENUES, ...NAR_VENUES, ...BANEI_VENUES];
+function initStationSelects() {
+  const vs = document.getElementById('station-venue');
+  if (vs && !vs.options.length) {
+    vs.innerHTML = '<option value="">（全場対象）</option>' +
+      ['🏇 中央競馬','🐎 地方競馬','🛷 特殊競馬'].map(g => {
+        const list = g.includes('中央') ? JRA_VENUES : g.includes('地方') ? NAR_VENUES : BANEI_VENUES;
+        return '<optgroup label="' + g + '">' + list.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join('') + '</optgroup>';
+      }).join('');
+  }
+}
+function onStationTargetChange() {
+  // 対象ジャンルに応じて競馬場セレクトの有効/無効を簡易表示
+  const t = document.getElementById('station-target').value;
+  const vs = document.getElementById('station-venue');
+  if (vs) vs.disabled = (t === 'all');
+}
+function classifyStationKind(title) {
+  if (/結果|着順|払戻|確定|人気|タイム/.test(title)) return 'results';
+  if (/予定|枠順|出走|開催|競走|レース/.test(title)) return 'upcoming';
+  return 'news';
+}
+async function fetchStationData() {
+  const st = document.getElementById('station-status');
+  const setSt = m => { if (st) st.textContent = m; };
+  const target = document.getElementById('station-target').value;
+  const venue = document.getElementById('station-venue').value;
+  const range = document.getElementById('station-range').value;
+  setSt('取得中…');
+  const feedUrl = 'https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba';
+  const sources = [
+    {type:'json', url:'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl)},
+    {type:'xml',  url:'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl)},
+  ];
+  let raw = [];
+  for (const s of sources) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(s.url, {signal: ctrl.signal});
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      if (s.type === 'json') {
+        const j = await res.json();
+        if (j && j.status === 'ok' && Array.isArray(j.items)) {
+          raw = j.items.slice(0, 40).map(it => ({title: it.title || '', link: it.link || '', date: (it.pubDate || '').slice(0, 16)}));
+        }
+      } else {
+        raw = parseRssXmlItems(await res.text()).slice(0, 40);
+      }
+      if (raw.length) break;
+    } catch (e) { /* 次へ */ }
+  }
+  // 同期データも範囲に応じて候補に追加
+  if (latestData) {
+    const keys = range === 'results' ? ['results'] : range === 'upcoming' ? ['upcoming'] : ['upcoming','results','news'];
+    keys.forEach(k => (latestData[k] || []).forEach(it => {
+      if (it.title) raw.push({title: it.title, link: it.url || '', date: (it.date || '').slice(0, 16), synced: true});
+    }));
+  }
+  // フィルタ：対象ジャンル/競馬場/範囲
+  const NG = ['ビール','キャンペーン','グッズ','プレゼント','求人','採用','コラボ','入場券','トークショー','テレビ','ラジオ'];
+  const wantKinds = range === 'results' ? ['results'] : range === 'upcoming' ? ['upcoming'] : ['upcoming','results'];
+  const picked = [];
+  raw.forEach(it => {
+    const t = it.title || '';
+    if (t.length < 5 || NG.some(w => t.includes(w))) return;
+    const kind = classifyStationKind(t);
+    if (!wantKinds.includes(kind)) return;
+    const rv = venueOfRace(t);
+    if (venue && rv !== venue && !t.includes(venue)) return;
+    if (target !== 'all') {
+      if (target === 'g1') { if (!/G1|重賞|ステークス|大賞典|記念|賞|杯/.test(t)) return; }
+      else if (target === 'jra' && !(JRA_VENUES.some(v => t.includes(v)) || /JRA|中央/.test(t))) return;
+      else if (target === 'nar' && !(NAR_VENUES.some(v => t.includes(v)) || /地方|NAR|南関東/.test(t))) return;
+      else if (target === 'banei' && !/ばんえい|帯広/.test(t)) return;
+    }
+    picked.push(it);
+  });
+  // 重複除去（URL or タイトル）
+  const seen = new Set();
+  const uniq = picked.filter(it => {
+    const k = it.link || it.title;
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  }).slice(0, 30);
+  if (!uniq.length) { setSt('⚠️ 条件に合うデータが見つかりませんでした（同期データのみ表示中）'); renderLearningGraph(); return; }
+  let added = 0;
+  uniq.forEach(it => {
+    const kind = classifyStationKind(it.title);
+    const cat = target !== 'all' ? target : (categoryOfVenue(venueOfRace(it.title)) || 'jra');
+    const ven = venueOfRace(it.title) || (venue || '（指定なし）');
+    const rec = {
+      id: Date.now() + Math.floor(Math.random() * 100000), category: cat,
+      categoryLabel: LEARN_CATEGORIES[cat] ? LEARN_CATEGORIES[cat].label : cat,
+      venue: ven, race: it.title.slice(0, 60),
+      text: '【外部取得 ' + (kind === 'results' ? '結果' : '予定') + '】' + it.title + (it.synced ? '（管理画面同期）' : '（netkeiba RSS）'),
+      date: new Date().toISOString(), source: 'station',
+    };
+    if (!learnings.some(l => l.race === rec.race && l.category === cat)) { learnings.push(rec); added++; }
+    stationItems.push({id: rec.id, title: it.title, url: it.link, date: it.date, kind, genre: cat, venue: ven});
+  });
+  saveJSON('keiba_learnings', learnings);
+  saveJSON('keiba_station_items', stationItems.slice(-200));
+  setSt('✅ ' + added + '件をAIに保存しました（全' + learnings.length + '件）');
+  renderLearnList(); populateQuickSelect(); renderLearningGraph();
+}
+
+/* ---------- AI学習度グラフ（Canvas描画） ---------- */
+function learnStats() {
+  const byCat = {g1:0, jra:0, nar:0, banei:0};
+  learnings.forEach(l => { if (byCat[l.category] !== undefined) byCat[l.category]++; });
+  const resultCount = predictionsHistory.length + reflections.length;
+  const score = learnings.length + stationItems.length * 0.5 + predictionsHistory.length * 2 + reflections.length * 3;
+  const lv = Math.min(10, 1 + Math.floor(score / 8));
+  const prog = Math.min(100, Math.round(((score % 8) / 8) * 100));
+  return {byCat, resultCount, score, lv, prog};
+}
+function setupCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 300, h = cv.clientHeight || 100;
+  if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  const ctx = cv.getContext && cv.getContext('2d');
+  if (!ctx) return null;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return {ctx, w, h};
+}
+function drawGauge(cv, lv, prog) {
+  const c = setupCanvas(cv); if (!c) return; const {ctx, w, h} = c;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h - 8, r = Math.min(w / 2 - 20, h - 14);
+  ctx.lineWidth = 12; ctx.lineCap = 'round';
+  ctx.strokeStyle = '#3e3e42';
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 0); ctx.stroke();
+  const frac = (lv - 1 + prog / 100) / 10;
+  ctx.strokeStyle = '#0a84ff';
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, Math.PI + Math.PI * frac); ctx.stroke();
+  ctx.fillStyle = '#0a84ff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Lv.' + lv, cx, cy - r * 0.45);
+  ctx.fillStyle = '#8e8e93'; ctx.font = '11px sans-serif';
+  ctx.fillText('学習進捗 ' + prog + '%', cx, cy - r * 0.45 + 18);
+}
+function drawBars(cv, stats) {
+  const c = setupCanvas(cv); if (!c) return; const {ctx, w, h} = c;
+  ctx.clearRect(0, 0, w, h);
+  const axes = [
+    ['大型イベント', stats.byCat.g1], ['中央競馬', stats.byCat.jra],
+    ['地方競馬', stats.byCat.nar], ['ばんえい', stats.byCat.banei],
+    ['結果データ分析', stats.resultCount],
+  ];
+  const max = Math.max(1, ...axes.map(a => a[1]));
+  const bh = 22, gap = 8, x0 = 92, bw = w - x0 - 30;
+  axes.forEach((a, i) => {
+    const y = i * (bh + gap) + 4;
+    ctx.fillStyle = '#8e8e93'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(a[0], x0 - 6, y + bh - 7);
+    ctx.fillStyle = '#2c2c2e'; ctx.fillRect(x0, y, bw, bh);
+    const fw = Math.max(4, bw * a[1] / max);
+    const grad = ctx.createLinearGradient(x0, 0, x0 + bw, 0);
+    grad.addColorStop(0, '#0a84ff'); grad.addColorStop(1, '#64d2ff');
+    ctx.fillStyle = grad; ctx.fillRect(x0, y, fw, bh);
+    ctx.fillStyle = '#cccccc'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(String(a[1]), x0 + fw + 4, y + bh - 7);
+  });
+}
+function drawTrend(cv) {
+  const c = setupCanvas(cv); if (!c) return; const {ctx, w, h} = c;
+  ctx.clearRect(0, 0, w, h);
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({key, label: (d.getMonth() + 1) + '/' + d.getDate(), count: 0});
+  }
+  const all = [
+    ...learnings.map(l => ({d: l.date, w: 1})),
+    ...predictionsHistory.map(p => ({d: p.date, w: 1})),
+    ...reflections.map(r => ({d: r.date, w: 2})),
+    ...stationItems.map(s => ({d: s.date || new Date().toISOString(), w: 1})),
+  ];
+  all.forEach(e => {
+    const k = (e.d || '').slice(0, 10);
+    const day = days.find(x => x.key === k);
+    if (day) day.count += e.w;
+  });
+  let cum = 0;
+  const pts = days.map(d => { cum += d.count; return {x: d.label, y: cum}; });
+  const maxY = Math.max(1, cum);
+  const pad = 8, pw = w - pad * 2, ph = h - pad * 2 - 14;
+  ctx.strokeStyle = '#3e3e42'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad, h - pad - 14); ctx.lineTo(w - pad, h - pad - 14); ctx.stroke();
+  if (pts.length < 2 || maxY === 1 && cum === 0) {
+    ctx.fillStyle = '#8e8e93'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('まだデータがありません', w / 2, h / 2); return;
+  }
+  const step = pw / (pts.length - 1);
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    const x = pad + i * step, y = h - pad - 14 - (p.y / maxY) * ph;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#0a84ff'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.lineTo(pad + (pts.length - 1) * step, h - pad - 14); ctx.lineTo(pad, h - pad - 14); ctx.closePath();
+  ctx.fillStyle = 'rgba(10,132,255,0.15)'; ctx.fill();
+  ctx.fillStyle = '#8e8e93'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(pts[0].x, pad, h - 4);
+  ctx.fillText(pts[pts.length - 1].x, w - pad, h - 4);
+  ctx.fillStyle = '#0a84ff'; ctx.font = 'bold 11px sans-serif';
+  ctx.fillText('累計 ' + cum + '件', w - pad - 30, pad + 4);
+}
+function renderLearningGraph() {
+  const stats = learnStats();
+  const lvEl = document.getElementById('learn-level');
+  if (lvEl) lvEl.textContent = '🤖 総合AI学習レベル：Lv.' + stats.lv + '（学習スコア ' + Math.round(stats.score) + '）';
+  const pnl = pnlSummary();
+  const pnlEl = document.getElementById('pnl-summary');
+  if (pnlEl) pnlEl.innerHTML = pnl.count
+    ? '💰 収支サマリー：投資 ' + pnl.invested.toLocaleString() + '円 ／ 払戻 ' + pnl.payout.toLocaleString() + '円 ／ ' +
+      '<b style="color:' + (pnl.profit >= 0 ? '#30d158' : '#ff453a') + '">' + (pnl.profit >= 0 ? '+' : '') + pnl.profit.toLocaleString() + '円</b>' +
+      ' ／ 的中率 ' + pnl.hitRate + '% ／ 回収率 ' + pnl.recovery + '%（答え合わせ ' + pnl.count + '件）'
+    : '💰 収支サマリー：まだ答え合わせデータがありません';
+  const g = document.getElementById('cv-gauge');
+  if (g) drawGauge(g, stats.lv, stats.prog);
+  const b = document.getElementById('cv-bars');
+  if (b) drawBars(b, stats);
+  const t = document.getElementById('cv-trend');
+  if (t) drawTrend(t);
+}
+
+/* ---------- バックアップ（書き出し／復元） ---------- */
+const BACKUP_KEYS = ['keiba_learnings','keiba_predictions','keiba_reflections','keiba_ext_news','keiba_station_items','keiba_venue_data','keiba_venue_toggles'];
+function exportBackup() {
+  const data = {};
+  BACKUP_KEYS.forEach(k => { data[k] = loadJSON(k, k.includes('venue_toggles') ? {} : []); });
+  data._exported_at = new Date().toISOString();
+  const json = JSON.stringify(data);
+  const area = document.getElementById('backup-area');
+  if (area) { area.value = json; area.scrollIntoView({behavior:'smooth'}); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(json).then(() => alert('📤 ' + BACKUP_KEYS.length + '項目を書き出し、クリップボードにコピーしました')).catch(() => alert('書き出しました（テキスト欄をコピーしてください）'));
+  } else { alert('書き出しました（テキスト欄をコピーしてください）'); }
+}
+function applyBackup(data) {
+  if (!data || typeof data !== 'object') { alert('JSON形式が正しくありません'); return; }
+  BACKUP_KEYS.forEach(k => { if (data[k] !== undefined) saveJSON(k, data[k]); });
+  venueData = loadJSON('keiba_venue_data', {});
+  venueToggles = loadJSON('keiba_venue_toggles', {});
+  predictionsHistory = loadJSON('keiba_predictions', []);
+  learnings = loadJSON('keiba_learnings', []);
+  reflections = loadJSON('keiba_reflections', []);
+  stationItems = loadJSON('keiba_station_items', []);
+  extNews = loadJSON('keiba_ext_news', []);
+  buildVenues(); renderFavorites(); renderHistory(); renderLearnList();
+  populateQuickSelect(); renderLearningGraph(); onLearnCategoryChange();
+  alert('✅ 復元しました（' + (data._exported_at || '日時不明') + ' のデータ）');
+}
+function importBackup() {
+  const area = document.getElementById('backup-area');
+  try { applyBackup(JSON.parse(area ? area.value : '')); }
+  catch (e) { alert('JSONの解析に失敗しました: ' + e.message); }
+}
+function importBackupFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => { try { applyBackup(JSON.parse(reader.result)); } catch (e) { alert('JSONの解析に失敗しました'); } };
+  reader.readAsText(f);
+  input.value = '';
+}
+
 /* ---------- カウンター ---------- */
 const COUNT_BASE = 'https://countapi.mileshilliard.com/api/v1';
 const COUNT_KEY_TOTAL = 'keiba_elizabeth_viewer_total';
@@ -730,6 +1121,8 @@ venueData = loadJSON('keiba_venue_data', {});
 venueToggles = loadJSON('keiba_venue_toggles', {});
 predictionsHistory = loadJSON('keiba_predictions', []);
 learnings = loadJSON('keiba_learnings', []);
+reflections = loadJSON('keiba_reflections', []);
+stationItems = loadJSON('keiba_station_items', []);
 
 renderG1();
 buildVenues();
@@ -737,7 +1130,10 @@ renderFavorites();
 renderHistory();
 renderLearnList();
 onLearnCategoryChange();
+initStationSelects();
+onStationTargetChange();
 populateRaceSelect();
 initVenueRaceSelects();
 initCounter();
 loadLatest();
+renderLearningGraph();

@@ -242,3 +242,17 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
   - `evidenceFor(raceName)`：外部ニュース＋同期データからレース名に関連するタイトルを最大2件抽出し、予想結果の「根拠情報」に表示
   - `goPredict(venue)`：お気に入り等からのジャンプ時に場・11Rを自動セット
 - 検証: node --check OK。DOMスタブで 1R〜12R全選択肢・11R/12R表記・場×R連動・クイック選択同期・goPredict・外部取得成功/失敗フォールバックを確認
+
+## 答え合わせAI・学習ステーション・学習度グラフ・バックアップ
+- `index.html`
+  - 予想結果パネルのボタンを「🏁 答え合わせ」に変更。結果入力エリアに「払戻」欄と「💾 結果を保存してAIに反省学習させる」ボタンを追加
+  - 学習画面に3カード追加：📡外部データ取得・AI学習ステーション（対象/競馬場/範囲の3プルダウン＋保存ボタン）、📈AI学習度・成長グラフ（Canvas3枚：ゲージ/5軸横棒/14日推移＋収支サマリー）、🔄マイAIデータ引き継ぎ（書き出しコピー/ファイル復元/貼り付け復元）
+- `app.js`
+  - `answerCheck()`：同期結果データのdetail.entriesから1〜3着を自動入力を試行、失敗時は手動フォームを開く
+  - `saveAnswerCheck()`：予想top3と実着順を照合し馬連/馬単/3連複/3連単の的中判定・収支を計算。ズレ要因（本命過剰評価/穴馬強化等）を自動生成し `keiba_reflections`＋`keiba_learnings`（答え合わせ記録）へ保存
+  - `learningBoostMap()`：同競馬場・関連レースの答え合わせ実3着内馬番を+2ブーストし次回予想に反映
+  - `fetchStationData()`：rss2json/codetabsプロキシ＋`latestData`を対象ジャンル/場/範囲でフィルタし、重複除去後 localStorage の learnings/station_items に保存
+  - `renderLearningGraph()`：Canvas自前描画（外部ライブラリ不使用）。Lv/進捗ゲージ・5軸得意度バー・14日累計推移を `setTab('learn')` 時と各保存後に再描画
+  - `pnlSummary()`：投資/払戻/収支/的中率/回収率を算出しグラフ上部に表示
+  - `exportBackup()/importBackup()/importBackupFile()`：7つのlocalStorageキーをJSONで書き出し・復元
+- 検証: node --check OK。DOMスタブで 予想→答え合わせ（的中判定/収支/反省レッスン生成）→ステーション取得（NG除外・2件保存）→グラフ描画 を確認

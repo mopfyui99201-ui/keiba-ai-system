@@ -380,14 +380,17 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
     </div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn btn-copy" style="flex:1;" onclick="copyTickets()">📋 買い目をコピー</button>
-      <button class="btn btn-success" style="flex:1;" onclick="showResultInput()">学習記録</button>
+      <button class="btn btn-success" style="flex:1;" onclick="answerCheck()">🏁 答え合わせ</button>
     </div>
     <div id="result-input-area" style="margin-top:8px;display:none;">
       <div class="correction-row">
         <label>1着：</label><input type="text" id="in-1st" placeholder="馬番">
         <label>2着：</label><input type="text" id="in-2nd" placeholder="馬番">
         <label>3着：</label><input type="text" id="in-3rd" placeholder="馬番">
-        <button class="btn btn-success" onclick="saveResult()">記録</button>
+        <label>払戻：</label><input type="text" id="in-payout" placeholder="円">
+      </div>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn btn-success btn-block" onclick="saveAnswerCheck()">💾 結果を保存してAIに反省学習させる</button>
       </div>
     </div>
     <div class="history-box" id="history-box"></div>
@@ -426,6 +429,62 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
     </div>
     <h4>🗂 覚えさせた学習リスト（編集・削除可能）</h4>
     <div class="learn-list" id="learn-list"></div>
+  </div>
+
+  <div class="card">
+    <h3>📡 外部データ取得・AI学習ステーション</h3>
+    <p style="font-size:11px;color:#8e8e93;margin-bottom:10px;">公開フィード・同期データからレース情報を読み込み、この端末のAIに保存します。</p>
+    <div class="field">
+      <label>① 取得対象</label>
+      <select id="station-target" onchange="onStationTargetChange()">
+        <option value="all">🌐 すべての競馬場（中央・地方・ばんえい一括）</option>
+        <option value="g1">🏆 大型イベント・重賞のみ</option>
+        <option value="jra">🏇 中央競馬（JRA）</option>
+        <option value="nar">🐎 地方競馬（NAR）</option>
+        <option value="banei">🛷 特殊競馬（帯広ばんえい）</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>競馬場（任意・個別指定）</label>
+      <select id="station-venue"><option value="">（全場対象）</option></select>
+    </div>
+    <div class="field">
+      <label>② 取得範囲</label>
+      <select id="station-range">
+        <option value="upcoming">📅 直近・本日のレース予定＆最新情報</option>
+        <option value="results">📊 過去1週間分のレース結果・傾向データ</option>
+        <option value="both">🔄 直近予定 ＋ 過去1週間分を一括取得</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-block" onclick="fetchStationData()">📥 読み込んでAIに保存</button>
+    </div>
+    <div id="station-status" style="font-size:11px;color:#8e8e93;margin-top:6px;"></div>
+  </div>
+
+  <div class="card">
+    <h3>📈 AI学習度・成長グラフ</h3>
+    <div id="learn-level" style="font-size:13px;font-weight:700;color:#0a84ff;margin-bottom:8px;">-</div>
+    <div id="pnl-summary" style="font-size:11px;color:#8e8e93;margin-bottom:8px;">-</div>
+    <canvas id="cv-gauge" style="width:100%;height:90px;"></canvas>
+    <div style="font-size:11px;color:#8e8e93;margin:8px 0 2px;">カテゴリ別・得意度</div>
+    <canvas id="cv-bars" style="width:100%;height:150px;"></canvas>
+    <div style="font-size:11px;color:#8e8e93;margin:8px 0 2px;">学習件数の推移（直近14日・累計）</div>
+    <canvas id="cv-trend" style="width:100%;height:120px;"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>🔄 マイAIデータの引き継ぎ</h3>
+    <p style="font-size:11px;color:#8e8e93;margin-bottom:8px;">学習データ・予想履歴・答え合わせ・お気に入りをJSONで書き出し／復元できます。</p>
+    <div class="btn-row">
+      <button class="btn btn-copy" style="flex:1;" onclick="exportBackup()">📤 書き出し（コピー）</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="document.getElementById('backup-restore').click()">📥 ファイルから復元</button>
+      <input type="file" id="backup-restore" accept=".json,application/json" style="display:none;" onchange="importBackupFile(this)">
+    </div>
+    <textarea id="backup-area" class="paste-area" style="min-height:70px;margin-top:8px;" placeholder="書き出したJSON、または復元用JSONを貼り付け…"></textarea>
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn btn-success btn-block" onclick="importBackup()">💾 貼り付けJSONから復元</button>
+    </div>
   </div>
 </div>
 

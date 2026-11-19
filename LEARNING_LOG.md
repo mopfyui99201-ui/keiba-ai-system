@@ -136,3 +136,10 @@
 - プロキシは rss2json API（JSONで返る・実測ok）を第一、codetabs proxy（XML返却・DOMParserで解析）を第二のフォールバックにした。alloriginsは応答が不安定で採用見送り
 - 取得失敗時は例外を握りつぶしてステータス表示のみ行い、既存の管理者同期JSON（latest_keiba.json）とlocalStorageの学習データがそのまま使える設計。外部データは localStorage `keiba_ext_news` に保存しリロード後も残る
 - 3段階選択は「場×R→selectedRaceName生成」「クイック選択→レース名セット＋可能なら場/R同期」の双方向。クイック選択でフルレース名（例:中山11R 有馬記念）を保持するため、onVenueRaceChangeの上書きを避けてセレクト値のみ直接代入する実装にした
+
+## 答え合わせ学習・ステーション・グラフ設計
+- 予想構造は runPredict 時に windowLastPred へ保存（top3/next3/予算/券種配分）。結果照合は「予想top3集合 vs 実1〜3着」で4券種を個別判定
+- 反省レッスンはルールベース自動生成（本命不的中→人気馬過剰評価補正、3着内予想馬なし→穴馬強化）。学習リストにも「【答え合わせ】実際◯→◯→◯着」として登録し、learningBoostMap が同場の実3着内馬番をブーストするため次回予想に実際に効く
+- 学習ステーションは RSS プロキシ＋管理者同期JSONの両方を候補にし、タイトルのキーワードで kind（予定/結果）・場・ジャンルを推定。NGワードと重複（URL/タイトル）を除いて最大30件を learnings に変換
+- グラフは Chart.js を使わず Canvas 2D で自前描画（file:// やオフラインでも動く・依存ゼロ）。DPR対応でRetinaも綺麗。パネル非表示時は clientWidth=0 になるため setTab('learn') で再描画するのがポイント
+- バックアップは localStorage 7キーを1JSONに集約。ファイル選択/貼り付け/クリップボードの3経路で復元可能
