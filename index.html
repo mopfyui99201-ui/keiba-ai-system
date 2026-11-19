@@ -9,23 +9,31 @@
 body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; background: #1e1e1e; color: #ffffff; line-height: 1.5; padding: 12px; }
 .app-container { max-width: 560px; margin: 0 auto; }
 
-/* Macウィンドウ風タイトルバー */
 .title-bar { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px 10px 0 0; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
 .traffic { display: flex; gap: 6px; }
 .traffic i { width: 12px; height: 12px; border-radius: 50%; display: block; }
 .traffic .r { background: #ff5f57; } .traffic .y { background: #febc2e; } .traffic .g { background: #28c840; }
 .title-bar h1 { font-size: 14px; font-weight: 600; color: #cccccc; flex: 1; text-align: center; margin-right: 40px; }
 
-/* タブバー */
-.nav-bar { display: flex; gap: 4px; margin-bottom: 10px; background: #252526; border: 1px solid #3e3e42; border-top: none; border-radius: 0 0 8px 8px; padding: 6px; }
-.nav-tab { flex: 1; min-width: 72px; padding: 8px 4px; background: #2d2d30; border: 1px solid #3e3e42; border-radius: 6px; color: #cccccc; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.nav-bar { display: flex; gap: 4px; margin-bottom: 10px; background: #252526; border: 1px solid #3e3e42; border-top: none; border-radius: 0 0 8px 8px; padding: 6px; flex-wrap: wrap; }
+.nav-tab { flex: 1; min-width: 90px; padding: 9px 4px; background: #2d2d30; border: 1px solid #3e3e42; border-radius: 6px; color: #cccccc; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
 .nav-tab:hover { background: #3e3e42; color: #ffffff; }
 .nav-tab.active { background: #0a5ea8; border-color: #0a5ea8; color: #ffffff; }
 
 .tab-panel { display: none; margin-bottom: 10px; }
 .tab-panel.active { display: block; }
-.link-card { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
-.link-card h3 { font-size: 13px; color: #0a84ff; margin-bottom: 8px; }
+
+.card { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.card h3 { font-size: 13px; color: #0a84ff; margin-bottom: 8px; }
+.card h4 { font-size: 12px; color: #ff9f0a; margin: 10px 0 6px; }
+
+.g1-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.g1-card { background: #252526; border: 1px solid #3e3e42; border-radius: 8px; padding: 10px; }
+.g1-card .g1-name { font-size: 12px; font-weight: 700; color: #ffd60a; margin-bottom: 4px; }
+.g1-card .g1-meta { font-size: 11px; color: #cccccc; margin-bottom: 6px; }
+.g1-card a { display: inline-block; font-size: 11px; color: #64d2ff; text-decoration: none; padding: 3px 8px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 5px; }
+.g1-card a:hover { background: #0a5ea8; color: #fff; }
+
 .link-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .link-btn { display: inline-block; padding: 7px 12px; background: #252526; border: 1px solid #3e3e42; border-radius: 6px; color: #64d2ff; font-size: 12px; text-decoration: none; font-weight: 600; }
 .link-btn:hover { background: #0a5ea8; border-color: #0a5ea8; color: #fff; }
@@ -43,7 +51,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
 .accordion-content { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: #252526; }
 .accordion-content.open { max-height: 640px; overflow-y: auto; padding: 4px 0; }
 
-.venue-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #3e3e42; font-size: 12px; cursor: default; }
+.venue-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #3e3e42; font-size: 12px; }
 .venue-row:last-of-type { border-bottom: none; }
 .venue-name { width: 88px; flex-shrink: 0; color: #ffffff; font-weight: 600; cursor: pointer; }
 .venue-name:hover { color: #64d2ff; }
@@ -56,7 +64,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
 .toggle.active { background: #30d158; }
 .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: 0.2s; }
 .toggle.active::after { transform: translateX(16px); }
-
 .venue-detail { display: none; padding: 10px 12px; background: #1e1e1e; border-bottom: 1px solid #3e3e42; font-size: 12px; }
 .venue-detail.open { display: block; }
 .venue-detail .ev-title { color: #ff9f0a; font-weight: 600; margin-bottom: 4px; }
@@ -69,34 +76,45 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
 .memo-inputs .save { background: #0a5ea8; }
 .memo-inputs .del { background: #b91c1c; }
 
-.predict-section { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
-.predict-section h2 { font-size: 14px; color: #0a84ff; margin-bottom: 8px; }
-.paste-area { width: 100%; min-height: 90px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 6px; padding: 8px; color: #ffffff; font-family: Menlo, monospace; font-size: 12px; margin-bottom: 10px; resize: vertical; }
-.btn-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.btn { padding: 10px 14px; border: none; border-radius: 7px; color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.15s; }
-.btn-block { width: 100%; }
-.btn-primary { background: #2d2d30; border: 1px solid #3e3e42; color: #ffffff; }
-.btn-primary:hover { background: #3e3e42; }
-.btn-primary:active { background: #0a5ea8; border-color: #0a5ea8; }
-.btn-success { background: #2d2d30; border: 1px solid #3e3e42; color: #30d158; }
-.btn-success:hover { background: #3e3e42; }
-.btn-copy { background: #2d2d30; border: 1px solid #3e3e42; color: #ff9f0a; }
-.btn-copy:hover { background: #3e3e42; }
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 11px; color: #8e8e93; margin-bottom: 4px; }
+select, .text-input { width: 100%; padding: 10px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 7px; color: #ffffff; font-size: 13px; }
+select:focus, .text-input:focus { outline: none; border-color: #0a5ea8; }
+.budget-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.budget-row input { width: 100px; padding: 9px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 7px; color: #ffffff; font-size: 13px; }
+.quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.quick-btn { padding: 6px 12px; background: #252526; border: 1px solid #3e3e42; border-radius: 6px; color: #cccccc; font-size: 12px; cursor: pointer; }
+.quick-btn:hover { background: #3e3e42; color: #fff; }
+.quick-btn.active { background: #0a5ea8; border-color: #0a5ea8; color: #fff; }
+.correction-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.correction-row input { flex: 1; min-width: 120px; padding: 8px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 6px; color: #ffffff; font-size: 12px; }
+.correction-row label { font-size: 11px; color: #8e8e93; align-self: center; }
+details.free-input { margin-top: 8px; }
+details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; padding: 6px 0; }
+.paste-area { width: 100%; min-height: 110px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 6px; padding: 8px; color: #ffffff; font-family: Menlo, monospace; font-size: 12px; margin-top: 6px; resize: vertical; }
 
-.result-panel { background: #252526; border: 1px solid #3e3e42; border-radius: 8px; padding: 10px 12px; margin-top: 8px; display: none; }
+.btn { padding: 11px 14px; border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+.btn-block { width: 100%; }
+.btn-primary { background: #0a5ea8; }
+.btn-primary:hover { background: #0a84ff; }
+.btn-success { background: #1d7a34; }
+.btn-success:hover { background: #30d158; color: #000; }
+.btn-copy { background: #8a5a00; }
+.btn-copy:hover { background: #ff9f0a; }
+.btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 120px; }
+
+.result-panel { background: #252526; border: 1px solid #3e3e42; border-radius: 8px; padding: 10px 12px; margin-top: 10px; display: none; }
 .result-panel.show { display: block; }
 .result-item { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid #3e3e42; font-size: 12px; }
 .result-item:last-child { border-bottom: none; }
 .result-item .label { color: #8e8e93; white-space: nowrap; }
 .result-item .value { color: #ffffff; font-weight: 600; text-align: right; }
-.budget-row, .correction-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
-.budget-row label, .correction-row label { font-size: 11px; color: #8e8e93; }
-.budget-row input, .correction-row input { padding: 6px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 5px; color: #ffffff; font-size: 12px; }
-.budget-row input { width: 90px; }
 .ticket-num { font-family: Menlo, monospace; font-weight: bold; color: #ff9f0a; }
 .ticket-money { color: #64d2ff; font-size: 11px; }
 .stars { color: #ffd60a; }
 .confidence { color: #0a84ff; font-weight: 600; }
+
 .latest-card { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
 .latest-card h3 { font-size: 13px; color: #0a84ff; margin-bottom: 4px; }
 .latest-time { font-size: 11px; color: #8e8e93; margin-bottom: 8px; }
@@ -109,11 +127,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
 .latest-item a { color: #64d2ff; text-decoration: none; }
 .latest-ai { margin-top: 8px; }
 .latest-ai textarea { width: 100%; min-height: 60px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 6px; padding: 8px; color: #cccccc; font-family: Menlo, monospace; font-size: 11px; resize: vertical; }
-.view-count { text-align: center; font-size: 10px; color: #48484a; margin-top: 14px; }
-.history-box { background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 12px; max-height: 160px; overflow-y: auto; }
-.history-box div { padding: 3px 0; border-bottom: 1px solid #2d2d30; color: #8e8e93; }
 
-@media (max-width: 540px) { body { padding: 8px; } .app-container { max-width: 100%; } .venue-event { display: none; } }
+.history-box, .learn-list { background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 12px; max-height: 180px; overflow-y: auto; }
+.history-box div, .learn-item { padding: 5px 0; border-bottom: 1px solid #2d2d30; color: #8e8e93; }
+.learn-item { color: #cccccc; }
+.learn-item .li-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.learn-item .li-meta { font-size: 10px; color: #8e8e93; }
+.learn-item .li-text { margin-top: 4px; color: #8e8e93; white-space: pre-wrap; max-height: 60px; overflow-y: auto; font-size: 11px; }
+.learn-item .li-btns button { padding: 3px 8px; font-size: 10px; border: none; border-radius: 4px; cursor: pointer; margin-left: 4px; }
+.learn-item .li-btns .edit { background: #0a5ea8; color: #fff; }
+.learn-item .li-btns .del { background: #b91c1c; color: #fff; }
+
+.view-count { text-align: center; font-size: 10px; color: #48484a; margin-top: 14px; }
+@media (max-width: 540px) { body { padding: 8px; } .app-container { max-width: 100%; } .venue-event { display: none; } .g1-grid { grid-template-columns: 1fr; } .nav-tab { min-width: 70px; font-size: 11px; } }
 </style>
 </head>
 <body>
@@ -125,462 +151,218 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
 </div>
 
 <div class="nav-bar">
-  <div class="nav-tab active" data-tab="jra" onclick="setTab('jra')">JRA</div>
-  <div class="nav-tab" data-tab="netkeiba" onclick="setTab('netkeiba')">netkeiba</div>
-  <div class="nav-tab" data-tab="bankei" onclick="setTab('bankei')">ばんえい</div>
-  <div class="nav-tab" data-tab="nar" onclick="setTab('nar')">地方競馬</div>
-  <div class="nav-tab" data-tab="input" onclick="setTab('input')">データ入力</div>
+  <div class="nav-tab active" data-tab="events" onclick="setTab('events')">🏆 大型イベント</div>
+  <div class="nav-tab" data-tab="jra" onclick="setTab('jra')">🏇 中央競馬</div>
+  <div class="nav-tab" data-tab="nar" onclick="setTab('nar')">🐎 地方競馬</div>
+  <div class="nav-tab" data-tab="banei" onclick="setTab('banei')">🛷 特殊競馬</div>
+  <div class="nav-tab" data-tab="predict" onclick="setTab('predict')">🎯 AI予想・買い目</div>
+  <div class="nav-tab" data-tab="learn" onclick="setTab('learn')">📚 学習の記録</div>
 </div>
 
-<div class="tab-panel active" id="panel-jra">
-  <div class="link-card"><h3>🏇 JRA（中央競馬）公式リンク</h3><div class="link-list">
-    <a class="link-btn" href="https://www.jra.go.jp/" target="_blank" rel="noopener">JRA公式</a>
-    <a class="link-btn" href="https://www.jra.go.jp/keiba/" target="_blank" rel="noopener">レース情報</a>
-    <a class="link-btn" href="https://www.jra.go.jp/fun/" target="_blank" rel="noopener">JRAファンコミュニティ</a>
-  </div></div>
-</div>
-<div class="tab-panel" id="panel-netkeiba">
-  <div class="link-card"><h3>📊 netkeiba リンク集</h3><div class="link-list">
-    <a class="link-btn" href="https://race.netkeiba.com/" target="_blank" rel="noopener">netkeibaレース</a>
-    <a class="link-btn" href="https://db.netkeiba.com/" target="_blank" rel="noopener">netkeibaDB</a>
-    <a class="link-btn" href="https://news.netkeiba.com/" target="_blank" rel="noopener">netkeibaニュース</a>
-  </div></div>
-</div>
-<div class="tab-panel" id="panel-banei">
-  <div class="link-card"><h3>🐴 ばんえい競馬 リンク集</h3><div class="link-list">
-    <a class="link-btn" href="https://www.keiba.go.jp/banei/" target="_blank" rel="noopener">ばんえい公式（帯広）</a>
-    <a class="link-btn" href="https://www.keiba.go.jp/" target="_blank" rel="noopener">地方競馬全国協会</a>
-  </div></div>
-</div>
-<div class="tab-panel" id="panel-nar">
-  <div class="link-card"><h3>🏟️ 地方競馬（NAR）リンク集</h3><div class="link-list">
-    <a class="link-btn" href="https://www.keiba.go.jp/" target="_blank" rel="noopener">地方競馬全国協会</a>
-    <a class="link-btn" href="https://nar.netkeiba.com/" target="_blank" rel="noopener">netkeiba地方競馬</a>
-  </div></div>
-</div>
-<div class="tab-panel" id="panel-input">
-  <div class="link-card"><h3>⌨️ データ入力</h3><div class="link-list">
-    <span style="font-size:12px;color:#8e8e93;">下の「手動コピペAI学習＆即時予想」欄に出馬表・オッズを貼り付けてください。</span>
-  </div></div>
-</div>
-
-<div class="target-card">
-  <div class="title">🔥 本日の狙い目</div>
-  <div class="content" id="target-content">データを貼り付けて予想を実行してください</div>
-  <div style="display:flex;justify-content:space-between;margin-top:4px;">
-    <span class="exp" id="target-exp">期待度 -</span>
-    <span class="stars" id="target-stars"></span>
+<!-- 1. 大型イベント -->
+<div class="tab-panel active" id="panel-events">
+  <div class="card">
+    <h3>🏆 年間ビッグレース（G1・メインイベント）</h3>
+    <div class="g1-grid" id="g1-grid"></div>
   </div>
-</div>
-
-<div class="latest-card" id="latest-card" style="display:none;">
-  <h3>📢 最新の競馬情報</h3>
-  <div class="latest-time" id="latest-time"></div>
-  <div id="latest-body"></div>
-</div>
-
-<div class="accordion-item">
-  <div class="accordion-header active" onclick="toggleAccordion(this, 'jra-section')">
-    <span>中央競馬場</span>
-    <span class="accordion-toggle">▲</span>
-  </div>
-  <div class="accordion-content open" id="jra-section">
-    <div id="jra-venues"></div>
-  </div>
-</div>
-
-<div class="accordion-item">
-  <div class="accordion-header" onclick="toggleAccordion(this, 'nar-section')">
-    <span>地方競馬場</span>
-    <span class="accordion-toggle">▼</span>
-  </div>
-  <div class="accordion-content" id="nar-section">
-    <div id="nar-venues"></div>
-  </div>
-</div>
-
-<div class="predict-section" id="predict-section">
-  <h2>🤖 手動コピペAI学習＆即時予想</h2>
-  <textarea id="paste-data" class="paste-area" placeholder="出馬表・オッズを貼り付け…（例：1 ディープインパクト 3.2）"></textarea>
-  <div class="btn-row">
-    <button class="btn btn-primary btn-block" onclick="pasteFromClipboard()">📋 クリップボードから貼り付けて即予想</button>
-  </div>
-  <div class="budget-row">
-    <label>予算：</label>
-    <input type="number" id="budget" value="3000" min="100" step="100">
-    <span style="font-size:11px;color:#8e8e93;">円（100円単位）</span>
-  </div>
-  <div class="correction-row">
-    <label>過剰人気切り：</label>
-    <input type="text" id="exclude-horses" placeholder="馬番（例：1,5)">
-    <label style="margin-left:8px;">穴馬指定：</label>
-    <input type="text" id="include-horses" placeholder="馬番（例：7）">
-  </div>
-  <div class="result-panel" id="result-panel">
-    <div class="result-item"><span class="label">レース：</span><span class="value" id="res-race">-</span></div>
-    <div class="result-item"><span class="label">AI確信度：</span><span class="value confidence" id="res-conf">-</span></div>
-    <div class="result-item"><span class="label">評価：</span><span class="value stars" id="res-stars">-</span></div>
-    <div class="result-item"><span class="label">推奨買い目：</span><span class="value ticket-num" id="res-ticket">-</span></div>
-    <div class="result-item"><span class="label">馬連：</span><span class="value" id="res-waku">-</span></div>
-    <div class="result-item"><span class="label">3連複：</span><span class="value" id="res-renpuku">-</span></div>
-    <div class="result-item"><span class="label">戦略①：</span><span class="value">本命勝負</span></div>
-    <div class="result-item"><span class="label">戦略②：</span><span class="value">ハイブリッド</span></div>
-    <div class="result-item"><span class="label">資金配分：</span><span class="value ticket-money" id="res-budget" style="font-size:11px;">-</span></div>
-  </div>
-  <div class="btn-row" style="margin-top:8px;">
-    <button class="btn btn-copy" style="flex:1;" onclick="copyTickets()">📋 買い目をコピー</button>
-    <button class="btn btn-success" style="flex:1;" onclick="showResultInput()">学習記録</button>
-  </div>
-  <div id="result-input-area" style="margin-top:8px;display:none;">
-    <div class="correction-row">
-      <label>1着：</label><input type="text" id="in-1st" placeholder="馬番">
-      <label style="margin-left:8px;">2着：</label><input type="text" id="in-2nd" placeholder="馬番">
-      <label style="margin-left:8px;">3着：</label><input type="text" id="in-3rd" placeholder="馬番">
-      <button class="btn btn-success" onclick="saveResult()">記録</button>
+  <div class="card">
+    <h3>🔗 大会公式リンク</h3>
+    <div class="link-list">
+      <a class="link-btn" href="https://www.jra.go.jp/keiba/" target="_blank" rel="noopener">JRA レース情報</a>
+      <a class="link-btn" href="https://db.netkeiba.com/?pid=race_list" target="_blank" rel="noopener">netkeiba レース一覧</a>
+      <a class="link-btn" href="https://www.keiba.go.jp/" target="_blank" rel="noopener">地方競馬全国協会</a>
+      <a class="link-btn" href="https://www.keiba.go.jp/banei/" target="_blank" rel="noopener">ばんえい競馬</a>
     </div>
   </div>
-  <div class="history-box" id="history-box"></div>
+  <div class="latest-card" id="latest-card" style="display:none;">
+    <h3>📢 最新の競馬情報（管理画面から同期）</h3>
+    <div class="latest-time" id="latest-time"></div>
+    <div id="latest-body"></div>
+  </div>
 </div>
+
+<!-- 2. 中央競馬 -->
+<div class="tab-panel" id="panel-jra">
+  <div class="card">
+    <h3>🏇 JRA 公式リンク</h3>
+    <div class="link-list">
+      <a class="link-btn" href="https://www.jra.go.jp/" target="_blank" rel="noopener">JRA公式</a>
+      <a class="link-btn" href="https://www.jra.go.jp/keiba/" target="_blank" rel="noopener">レース情報</a>
+      <a class="link-btn" href="https://www.jra.go.jp/fun/" target="_blank" rel="noopener">ファンコミュニティ</a>
+      <a class="link-btn" href="https://race.netkeiba.com/" target="_blank" rel="noopener">netkeiba(中央)</a>
+    </div>
+  </div>
+  <div class="accordion-item">
+    <div class="accordion-header active" onclick="toggleAccordion(this, 'jra-section')">
+      <span>中央競馬場（JRA全10場）</span><span class="accordion-toggle">▲</span>
+    </div>
+    <div class="accordion-content open" id="jra-section"><div id="jra-venues"></div></div>
+  </div>
+</div>
+
+<!-- 3. 地方競馬 -->
+<div class="tab-panel" id="panel-nar">
+  <div class="card">
+    <h3>🐎 地方競馬（NAR）公式リンク</h3>
+    <div class="link-list">
+      <a class="link-btn" href="https://www.keiba.go.jp/" target="_blank" rel="noopener">地方競馬全国協会</a>
+      <a class="link-btn" href="https://nar.netkeiba.com/" target="_blank" rel="noopener">netkeiba地方競馬</a>
+      <a class="link-btn" href="https://www.keiba.go.jp/topics/" target="_blank" rel="noopener">開催情報</a>
+    </div>
+  </div>
+  <div class="accordion-item">
+    <div class="accordion-header active" onclick="toggleAccordion(this, 'nar-section')">
+      <span>地方競馬場（南関東・門別・園田など）</span><span class="accordion-toggle">▲</span>
+    </div>
+    <div class="accordion-content open" id="nar-section"><div id="nar-venues"></div></div>
+  </div>
+</div>
+
+<!-- 4. 特殊競馬 -->
+<div class="tab-panel" id="panel-banei">
+  <div class="card">
+    <h3>🛷 ばんえい競馬（帯広）とは</h3>
+    <p style="font-size:12px;color:#cccccc;line-height:1.8;">
+      北海道・帯広競馬場で行われる特殊競馬。<b>そり（そり馬）</b>を引くため平地とは全く異なる特性があります。<br>
+      ・馬場は<b>砂</b>で、水分量が多いほどタイムが伸びる（重い馬場）<br>
+      ・<b>重量（斤量）</b>が成績に直結。重賞は別定、特別はハンデが多い<br>
+      ・スタート直後の<b>先行力</b>と<b>パワー</b>が重要。砂をかき分ける推進力が鍵<br>
+      ・冬季開催（概ね4月〜12月）が中心。雪解け後の馬場状態に注意
+    </p>
+  </div>
+  <div class="card">
+    <h3>📌 ばんえい攻略ポイント</h3>
+    <ul style="font-size:12px;color:#cccccc;padding-left:18px;line-height:1.9;">
+      <li>斤量の軽い馬／実績のある先行馬を重視</li>
+      <li>馬場水分量が多い日は差し・追い込みが届きにくい</li>
+      <li>ばんえい記念（G1・12月頃）は年間最大のメイン</li>
+      <li>オッズより「調教タイム＋馬体重増減」を重視するファンが多い</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>🔗 公式リンク</h3>
+    <div class="link-list">
+      <a class="link-btn" href="https://www.keiba.go.jp/banei/" target="_blank" rel="noopener">ばんえい公式</a>
+      <a class="link-btn" href="https://www.keiba.go.jp/" target="_blank" rel="noopener">地方競馬全国協会</a>
+      <a class="link-btn" href="https://nar.netkeiba.com/" target="_blank" rel="noopener">netkeibaばんえい</a>
+    </div>
+  </div>
+  <div class="card">
+    <h3>📝 ばんえい攻略メモ（この端末に保存）</h3>
+    <textarea id="banei-memo" class="paste-area" style="min-height:70px;" placeholder="ばんえいの傾向・覚え書きを入力して保存ボタンを押してください"></textarea>
+    <div class="btn-row"><button class="btn btn-success" onclick="saveBaneiMemo()">💾 メモを保存</button></div>
+    <div class="memo-view" id="banei-memo-view" style="margin-top:8px;color:#8e8e93;font-size:12px;white-space:pre-wrap;"></div>
+  </div>
+</div>
+
+<!-- 5. AI予想・買い目 -->
+<div class="tab-panel" id="panel-predict">
+  <div class="target-card">
+    <div class="title">🔥 本日の狙い目</div>
+    <div class="content" id="target-content">レースを選んで予想を実行してください</div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+      <span class="exp" id="target-exp">期待度 -</span>
+      <span class="stars" id="target-stars"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🎯 AI予想・買い目</h3>
+    <div class="field">
+      <label>① 対象レースを選択</label>
+      <select id="race-select" onchange="onRaceSelect()"></select>
+    </div>
+    <details class="free-input">
+      <summary>✏️ 自由入力・出馬表コピペ（馬番・馬名・オッズを貼り付け）</summary>
+      <textarea id="paste-data" class="paste-area" placeholder="例：&#10;1 ディープインパクト 3.2&#10;2 ジェンティルドンナ 5.0&#10;3 キタサンブラック 2.8"></textarea>
+    </details>
+    <div class="field" style="margin-top:10px;">
+      <label>② 予算（金額）</label>
+      <div class="budget-row">
+        <input type="number" id="budget" value="3000" min="100" step="100">
+        <span style="font-size:11px;color:#8e8e93;">円</span>
+      </div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="setBudget(1000)">1,000円</button>
+        <button class="quick-btn active" onclick="setBudget(3000)">3,000円</button>
+        <button class="quick-btn" onclick="setBudget(5000)">5,000円</button>
+        <button class="quick-btn" onclick="setBudget(10000)">10,000円</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>③ オプション（任意）</label>
+      <div class="correction-row">
+        <label>過剰人気切り：</label><input type="text" id="exclude-horses" placeholder="馬番（例：1,5）">
+        <label>穴馬指定：</label><input type="text" id="include-horses" placeholder="馬番（例：7）">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-block" onclick="runPredict()">🎯 この条件でAI予想を実行</button>
+    </div>
+    <div class="result-panel" id="result-panel">
+      <div class="result-item"><span class="label">レース：</span><span class="value" id="res-race">-</span></div>
+      <div class="result-item"><span class="label">AI確信度：</span><span class="value confidence" id="res-conf">-</span></div>
+      <div class="result-item"><span class="label">評価：</span><span class="value stars" id="res-stars">-</span></div>
+      <div class="result-item"><span class="label">推奨買い目（馬連）：</span><span class="value ticket-num" id="res-ticket">-</span></div>
+      <div class="result-item"><span class="label">馬連：</span><span class="value" id="res-waku">-</span></div>
+      <div class="result-item"><span class="label">3連複：</span><span class="value" id="res-renpuku">-</span></div>
+      <div class="result-item"><span class="label">3連単：</span><span class="value" id="res-sanrentan">-</span></div>
+      <div class="result-item"><span class="label">戦略①：</span><span class="value">本命勝負</span></div>
+      <div class="result-item"><span class="label">戦略②：</span><span class="value">ハイブリッド</span></div>
+      <div class="result-item"><span class="label">資金配分：</span><span class="value ticket-money" id="res-budget" style="font-size:11px;">-</span></div>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-copy" style="flex:1;" onclick="copyTickets()">📋 買い目をコピー</button>
+      <button class="btn btn-success" style="flex:1;" onclick="showResultInput()">学習記録</button>
+    </div>
+    <div id="result-input-area" style="margin-top:8px;display:none;">
+      <div class="correction-row">
+        <label>1着：</label><input type="text" id="in-1st" placeholder="馬番">
+        <label>2着：</label><input type="text" id="in-2nd" placeholder="馬番">
+        <label>3着：</label><input type="text" id="in-3rd" placeholder="馬番">
+        <button class="btn btn-success" onclick="saveResult()">記録</button>
+      </div>
+    </div>
+    <div class="history-box" id="history-box"></div>
+  </div>
+</div>
+
+<!-- 6. 学習の記録 -->
+<div class="tab-panel" id="panel-learn">
+  <div class="card">
+    <h3>📚 AIに覚えさせる（学習登録）</h3>
+    <p style="font-size:11px;color:#8e8e93;margin-bottom:10px;">レース結果・出馬表・攻略メモを貼り付けて保存すると、AI予想の精度に反映されます。</p>
+    <div class="field">
+      <label>カテゴリ</label>
+      <select id="learn-category" onchange="onLearnCategoryChange()">
+        <option value="g1">大型イベント（G1・ビッグレース）</option>
+        <option value="jra">中央競馬（JRA）</option>
+        <option value="nar">地方競馬（NAR）</option>
+        <option value="banei">特殊競馬（ばんえい）</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>競馬場</label>
+      <select id="learn-venue"></select>
+    </div>
+    <div class="field">
+      <label>レース名・日付</label>
+      <input type="text" id="learn-race" class="text-input" placeholder="例：エリザベス女王杯 / 2026年11月23日">
+    </div>
+    <div class="field">
+      <label>情報・レース結果・傾向テキスト</label>
+      <textarea id="learn-text" class="paste-area" style="min-height:130px;" placeholder="ネットからコピーした出馬表・レース結果・攻略メモを貼り付け..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-success btn-block" onclick="saveLearning()">💾 AIに覚えさせる（学習保存）</button>
+    </div>
+    <h4>🗂 覚えさせた学習リスト（編集・削除可能）</h4>
+    <div class="learn-list" id="learn-list"></div>
+  </div>
+</div>
+
 <div class="view-count" id="view-count"></div>
 </div>
-<script>
-const JRA_VENUES = ["東京","中山","京都","阪神","中京","新潟","福島","小倉","函館","札幌"];
-const NAR_VENUES = ["大井","川崎","船橋","浦和","門別","帯広(ばんえい)","盛岡","水沢","金沢","笠松","名古屋","園田","姫路","高知","佐賀"];
-const VENUE_EVENTS = {
-  "東京":["日本ダービー","天皇賞(秋)","ジャパンC","有馬記念"],"中山":["皐月賞","有馬記念","ホープフルS"],"京都":["菊花賞","天皇賞(春)","エリザベス女王杯"],"阪神":["桜花賞","宝塚記念","大阪杯"],
-  "中京":["チャンピオンズC","名古屋大賞典"],"新潟":["新潟2歳S","新潟記念"],"福島":["福島記念","ラジオNIKKEI賞"],"小倉":["小倉記念","北九州記念"],"函館":["函館記念","函館2歳S"],"札幌":["札幌記念","札幌2歳S"],
-  "大井":["東京大賞典","大井記念"],"川崎":["川崎記念","戸塚記念"],"船橋":["船橋記念"],"浦和":["浦和記念"],"門別":["門別記念"],"帯広(ばんえい)":["ばんえい記念"],"盛岡":["盛岡記念"],"水沢":["水沢記念"],
-  "金沢":["金沢記念"],"笠松":["笠松記念"],"名古屋":["名古屋記念"],"園田":["園田記念"],"姫路":["姫路記念"],"高知":["高知記念"],"佐賀":["佐賀記念"]
-};
-
-let venueData = {};
-let venueToggles = {};
-let predictionsHistory = [];
-let windowLastTickets = '';
-
-function loadState() {
-  try { venueData = JSON.parse(localStorage.getItem('keiba_venue_data') || '{}'); } catch(e) { venueData = {}; }
-  try { venueToggles = JSON.parse(localStorage.getItem('keiba_venue_toggles') || '{}'); } catch(e) { venueToggles = {}; }
-  try { predictionsHistory = JSON.parse(localStorage.getItem('keiba_predictions') || '[]'); } catch(e) { predictionsHistory = []; }
-}
-function saveVenueData() { localStorage.setItem('keiba_venue_data', JSON.stringify(venueData)); }
-function saveToggles() { localStorage.setItem('keiba_venue_toggles', JSON.stringify(venueToggles)); }
-function saveHistory() { localStorage.setItem('keiba_predictions', JSON.stringify(predictionsHistory)); }
-
-function setTab(tab) {
-  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-  if (tab === 'input') {
-    document.getElementById('predict-section').scrollIntoView({behavior: 'smooth', block: 'start'});
-  }
-}
-
-function toggleAccordion(header, sectionId) {
-  const content = document.getElementById(sectionId);
-  const toggle = header.querySelector('.accordion-toggle');
-  const isOpen = content.classList.contains('open');
-  document.querySelectorAll('.accordion-content.open').forEach(c => {
-    c.classList.remove('open'); c.style.maxHeight = '0';
-    const h = c.previousElementSibling;
-    if (h) {
-      h.classList.remove('active');
-      const t = h.querySelector('.accordion-toggle');
-      if (t) t.textContent = '▼';
-    }
-  });
-  if (!isOpen) {
-    content.classList.add('open'); content.style.maxHeight = '640px';
-    header.classList.add('active'); toggle.textContent = '▲';
-  }
-}
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function buildVenues() {
-  const jraGrid = document.getElementById('jra-venues');
-  const narGrid = document.getElementById('nar-venues');
-  jraGrid.innerHTML = ''; narGrid.innerHTML = '';
-  [...JRA_VENUES, ...NAR_VENUES].forEach(v => {
-    const isJRA = JRA_VENUES.includes(v);
-    const d = venueData[v] || {};
-    const events = VENUE_EVENTS[v] || [];
-    const mainEvent = events[0] || '通常開催';
-    const allEvents = events.join(' / ') || 'なし';
-    const toggleOn = venueToggles[v] !== false;
-    const grid = isJRA ? jraGrid : narGrid;
-    const row = document.createElement('div');
-    row.className = 'venue-row';
-    row.innerHTML =
-      '<span class="venue-name" data-v="' + esc(v) + '">' + esc(v) + '</span>' +
-      '<span class="venue-event"><span class="ev-star' + (d.favorite ? ' on' : '') + '">★</span>' + esc(mainEvent) + '</span>' +
-      '<span class="fav-star' + (d.favorite ? ' on' : '') + '" data-v="' + esc(v) + '">★</span>' +
-      '<div class="toggle' + (toggleOn ? ' active' : '') + '" data-v="' + esc(v) + '"></div>';
-    grid.appendChild(row);
-    const detail = document.createElement('div');
-    detail.className = 'venue-detail';
-    detail.id = 'detail-' + v;
-    detail.innerHTML =
-      '<div class="ev-title">主要ビッグイベント</div>' +
-      '<div class="ev-list">' + esc(allEvents) + '</div>' +
-      '<div class="memo-box">' +
-        '<div class="memo-view" id="memo-view-' + esc(v) + '">' + esc(d.memo || '（メモなし）') + '</div>' +
-        '<div class="memo-inputs">' +
-          '<input type="text" id="memo-input-' + esc(v) + '" placeholder="攻略メモを入力...">' +
-          '<button class="save" data-v="' + esc(v) + '">保存</button>' +
-          '<button class="del" data-v="' + esc(v) + '">削除</button>' +
-        '</div>' +
-      '</div>';
-    grid.appendChild(detail);
-  });
-}
-
-function venueAction(v, action) {
-  if (action === 'fav') {
-    if (!venueData[v]) venueData[v] = {};
-    venueData[v].favorite = !venueData[v].favorite;
-    saveVenueData(); buildVenues();
-  } else if (action === 'toggle') {
-    venueToggles[v] = venueToggles[v] === false ? true : false;
-    saveToggles();
-    const el = document.querySelector('.toggle[data-v="' + v + '"]');
-    if (el) el.classList.toggle('active', venueToggles[v] !== false);
-  } else if (action === 'save') {
-    const input = document.getElementById('memo-input-' + v);
-    if (!venueData[v]) venueData[v] = {};
-    venueData[v].memo = input ? input.value.trim() : '';
-    saveVenueData();
-    const view = document.getElementById('memo-view-' + v);
-    if (view) view.textContent = venueData[v].memo || '（メモなし）';
-    if (input) input.value = '';
-  } else if (action === 'del') {
-    if (venueData[v]) venueData[v].memo = '';
-    saveVenueData();
-    const view = document.getElementById('memo-view-' + v);
-    if (view) view.textContent = '（メモなし）';
-    const input = document.getElementById('memo-input-' + v);
-    if (input) input.value = '';
-  }
-}
-
-function toggleVenueDetail(v) {
-  const detail = document.getElementById('detail-' + v);
-  if (!detail) return;
-  const wasOpen = detail.classList.contains('open');
-  document.querySelectorAll('.venue-detail.open').forEach(d => d.classList.remove('open'));
-  if (!wasOpen) detail.classList.add('open');
-}
-
-function parseNumList(str) {
-  return (str || '').split(/[,、\s]+/).map(s => parseInt(s, 10)).filter(n => n > 0 && n <= 18);
-}
-
-function pasteFromClipboard() {
-  const ta = document.getElementById('paste-data');
-  if (navigator.clipboard && navigator.clipboard.readText) {
-    navigator.clipboard.readText().then(text => {
-      if (text && text.trim()) { ta.value = text; runPredict(); }
-      else { alert('クリップボードが空か、読み取りが許可されていません。手動で貼り付けてください。'); ta.focus(); }
-    }).catch(() => { alert('クリップボードの読み取りに失敗しました。手動で貼り付けてください。'); ta.focus(); });
-  } else {
-    alert('このブラウザはクリップボード読み取りに対応していません。手動で貼り付けてください。');
-    ta.focus();
-  }
-}
-
-function parseHorses(raw) {
-  const horses = [];
-  raw.split('\n').forEach(line => {
-    line = line.trim();
-    if (!line) return;
-    const nums = line.match(/\d+(?:\.\d+)?/g);
-    if (!nums || nums.length < 2) return;
-    const umaban = parseInt(nums[0], 10);
-    if (!(umaban >= 1 && umaban <= 18)) return;
-    const odds = parseFloat(nums[nums.length - 1]);
-    if (!(odds > 0)) return;
-    const name = line.replace(/^\d+\s*/, '').replace(/[\d.,]+\s*$/, '').trim() || ('馬番' + umaban);
-    horses.push({umaban, name, odds});
-  });
-  return horses;
-}
-
-function detectRaceName(raw) {
-  const m = raw.match(/([^\d\n]{0,15}\d+R[^\d\n]{0,15})/);
-  if (m) return m[1].trim();
-  const first = raw.split('\n').find(l => l.trim() && !/^\d/.test(l.trim()));
-  return first ? first.trim().slice(0, 30) : '貼り付けレース';
-}
-
-function starStr(conf) {
-  return conf >= 90 ? '★★★★★' : conf >= 75 ? '★★★★☆' : conf >= 60 ? '★★★☆☆' : '★★☆☆☆';
-}
-
-function runPredict() {
-  const raw = document.getElementById('paste-data').value.trim();
-  if (!raw) { alert('データを貼り付けてください'); return; }
-  let horses = parseHorses(raw);
-  if (horses.length < 3) { alert('3頭以上のデータを解析できませんでした'); return; }
-
-  const exclude = new Set(parseNumList(document.getElementById('exclude-horses').value));
-  const include = new Set(parseNumList(document.getElementById('include-horses').value));
-  horses = horses.filter(h => !exclude.has(h.umaban));
-  if (horses.length < 3) { alert('除外後に3頭未満になりました'); return; }
-
-  horses.forEach(h => { h.score = (1 / h.odds) * (include.has(h.umaban) ? 1.8 : 1); });
-  horses.sort((a, b) => b.score - a.score);
-
-  const top = horses.slice(0, 3);
-  const budget = Math.max(100, Math.round((parseInt(document.getElementById('budget').value) || 3000) / 100) * 100);
-  const favOdds = top[0].odds;
-  const conf = Math.max(50, Math.min(98, Math.round(98 - favOdds * 9)));
-  const raceName = detectRaceName(raw);
-
-  const t1 = top[0].umaban + '-' + top[1].umaban;
-  const t2 = top[0].umaban + ',' + top[1].umaban + '-' + top[2].umaban;
-  const rest = horses.slice(3, 6).map(h => h.umaban);
-  const t3 = top[0].umaban + ',' + top[1].umaban + ',' + top[2].umaban + (rest.length ? '-' + rest.join(',') : '');
-
-  const w1 = Math.round(budget * 0.5 / 100) * 100;
-  const w2 = Math.round(budget * 0.3 / 100) * 100;
-  const w3 = Math.max(0, budget - w1 - w2);
-  const budgetText = '馬連 ' + w1 + '円 / 馬単系 ' + w2 + '円 / 3連複 ' + w3 + '円（計 ' + (w1 + w2 + w3) + '円）';
-
-  document.getElementById('res-race').textContent = raceName + '（' + horses.length + '頭解析）';
-  document.getElementById('res-conf').textContent = conf + '%';
-  document.getElementById('res-stars').textContent = starStr(conf);
-  document.getElementById('res-ticket').textContent = t1;
-  document.getElementById('res-waku').textContent = t2;
-  document.getElementById('res-renpuku').textContent = t3;
-  document.getElementById('res-budget').textContent = budgetText;
-  document.getElementById('result-panel').classList.add('show');
-  document.getElementById('predict-section').scrollIntoView({behavior: 'smooth', block: 'nearest'});
-
-  document.getElementById('target-content').textContent = raceName + '：' + t1 + ' / ' + t2;
-  document.getElementById('target-exp').textContent = '期待度 ' + conf + '%';
-  document.getElementById('target-stars').textContent = starStr(conf);
-
-  windowLastTickets = 'レース: ' + raceName + '\n馬連 ' + t1 + ' (' + w1 + '円)\n馬単 ' + t2.replace(',', '→') + ' (' + w2 + '円)\n3連複 ' + t3 + ' (' + w3 + '円)';
-}
-
-function copyTickets() {
-  if (!windowLastTickets) { alert('買い目がありません。先に予想を実行してください。'); return; }
-  const done = () => alert('コピーしました:\n' + windowLastTickets);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(windowLastTickets).then(done).catch(() => fallbackCopy());
-  } else { fallbackCopy(); }
-  function fallbackCopy() {
-    const ta = document.createElement('textarea');
-    ta.value = windowLastTickets; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
-  }
-}
-
-function showResultInput() {
-  const el = document.getElementById('result-input-area');
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-
-function saveResult() {
-  const r1 = document.getElementById('in-1st').value.trim();
-  const r2 = document.getElementById('in-2nd').value.trim();
-  const r3 = document.getElementById('in-3rd').value.trim();
-  if (!r1 || !r2 || !r3) { alert('1〜3着を入力してください'); return; }
-  predictionsHistory.push({date: new Date().toISOString(), '1st': r1, '2nd': r2, '3rd': r3, tickets: windowLastTickets});
-  saveHistory();
-  renderHistory();
-  alert('学習記録を保存しました');
-  document.getElementById('in-1st').value = '';
-  document.getElementById('in-2nd').value = '';
-  document.getElementById('in-3rd').value = '';
-}
-
-function renderHistory() {
-  const box = document.getElementById('history-box');
-  if (!box) return;
-  if (!predictionsHistory.length) { box.innerHTML = '<div>学習記録はまだありません</div>'; return; }
-  box.innerHTML = predictionsHistory.slice(-10).reverse().map(r =>
-    '<div>' + esc(new Date(r.date).toLocaleString('ja-JP')) + ' ： ' + esc(r['1st'] || '') + ' → ' + esc(r['2nd'] || '') + ' → ' + esc(r['3rd'] || '') + '</div>'
-  ).join('');
-}
-
-document.addEventListener('click', function(e) {
-  const nameEl = e.target.closest('.venue-name');
-  if (nameEl) { toggleVenueDetail(nameEl.dataset.v); return; }
-  const favEl = e.target.closest('.fav-star');
-  if (favEl) { venueAction(favEl.dataset.v, 'fav'); return; }
-  const togEl = e.target.closest('.toggle');
-  if (togEl) { venueAction(togEl.dataset.v, 'toggle'); return; }
-  const btnEl = e.target.closest('.memo-inputs button');
-  if (btnEl) { venueAction(btnEl.dataset.v, btnEl.classList.contains('del') ? 'del' : 'save'); return; }
-});
-
-/* ---- アクセスカウンター（無料API・登録不要） ---- */
-const COUNT_BASE = 'https://countapi.mileshilliard.com/api/v1';
-const COUNT_KEY_TOTAL = 'keiba_elizabeth_viewer_total';
-function todayKey() {
-  const d = new Date();
-  return 'keiba_elizabeth_viewer_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-}
-function countHit(key) {
-  return fetch(COUNT_BASE + '/hit/' + key, {mode: 'cors'}).then(r => r.json()).catch(() => null);
-}
-function countGet(key) {
-  return fetch(COUNT_BASE + '/get/' + key, {mode: 'cors'}).then(r => r.json()).catch(() => null);
-}
-function initCounter() {
-  const el = document.getElementById('view-count');
-  Promise.all([countHit(COUNT_KEY_TOTAL), countHit(todayKey())]).then(() => {
-    return Promise.all([countGet(COUNT_KEY_TOTAL), countGet(todayKey())]);
-  }).then(([t, d]) => {
-    const total = t && t.value ? parseInt(t.value, 10) : 0;
-    const today = d && d.value ? parseInt(d.value, 10) : 0;
-    if (total > 0) el.textContent = '👀 閲覧数：累計 ' + total + '回（本日 ' + today + '回）';
-  }).catch(() => {});
-}
-
-/* ---- 最新競馬情報（管理画面から同期されたJSONを表示） ---- */
-function loadLatest() {
-  const card = document.getElementById('latest-card');
-  const body = document.getElementById('latest-body');
-  const timeEl = document.getElementById('latest-time');
-  const url = 'data/latest_keiba.json?t=' + Date.now();
-  fetch(url).then(r => {
-    if (!r.ok) throw new Error('no data');
-    return r.json();
-  }).then(data => {
-    if (!data || (!data.upcoming && !data.results && !data.news)) return;
-    timeEl.textContent = '更新: ' + (data.synced_at || data.fetched_at || '').replace('T',' ').slice(0,16);
-    let html = '';
-    const groups = [
-      ['直近レース予定・注目', data.upcoming],
-      ['過去1週間の主な結果', data.results],
-      ['その他ニュース', data.news],
-    ];
-    groups.forEach(([label, items]) => {
-      if (!items || !items.length) return;
-      html += '<div class="latest-group"><div class="g-title">' + esc(label) + '</div>';
-      items.slice(0, 8).forEach(it => {
-        html += '<div class="latest-item"><span class="li-title">' + esc(it.title || '') + '</span>' +
-          '<a class="li-src" href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.source || '') + '</a></div>';
-      });
-      html += '</div>';
-    });
-    if (data.ai_text) {
-      html += '<div class="latest-ai"><div class="g-title" style="color:#0a84ff;">🤖 AI学習用データ（コピーして予想欄へ）</div>' +
-        '<textarea readonly onclick="this.select()">' + esc(data.ai_text) + '</textarea></div>';
-    }
-    body.innerHTML = html;
-    card.style.display = 'block';
-  }).catch(() => {});
-}
-
-loadState();
-buildVenues();
-renderHistory();
-initCounter();
-loadLatest();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
