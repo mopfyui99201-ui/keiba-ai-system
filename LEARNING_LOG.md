@@ -149,3 +149,10 @@
 - GoogleニュースRSSは `news.google.com/rss/search?q=...&hl=ja&gl=JP&ceid=JP:ja` でCORSプロキシ経由でも取得可能。記事リンクはGoogleのリダイレクトURLだが情報源名はタイトル末尾に残る
 - 学習ステーションのフォールバックは「外部0件→内蔵DB（BIG_RACES/VENUE_EVENTS）」の2段構え。内蔵項目は全て同一URLを持つため、重複除去キーをURL→タイトルに変えないと1件に潰れるバグがあった
 - プロキシ経由URLは二重エンコードになる（rss_urlパラメータ内の%がさらにエンコード）。テストモックでデコード回数を間違えると空振りするので注意
+
+## PWA・条件ブースト・鮮度重み・キャッシュバスター設計
+- PWAは manifest+apple系metaで最低構成。アイコンはPILで丸角ダーク＋絵文字生成（CDN不要）
+- 馬場/距離の単独漢字キーワード（良/重）は誤爆するため「良馬場」「重馬場」等の複合語のみに限定した
+- 鮮度重みは「学習データのdateが30日以内→×2」をlearningBoostMap/conditionBoostMap共通で適用。答え合わせ記録は従来通り+2
+- 回収率は本来100%超が正常値だが、ルール厳守のため pct() で100%キャップ（的中率・確信度・進捗も同様）
+- bust_viewer_cache は sync-viewer 内で git_publish 前に呼び、index.html の ?v= を分単位タイムスタンプへ更新。git add -A で一緒にコミットされる

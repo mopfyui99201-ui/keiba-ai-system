@@ -4,6 +4,7 @@ admin_server.py - 競馬AI管理者専用ローカルサーバー（ポート876
 127.0.0.1 専用。GitHub Pagesには公開しない。
 """
 import os
+import re
 import sys
 import json
 import subprocess
@@ -163,6 +164,25 @@ def restore():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+def bust_viewer_cache():
+    """index.html 内の app.js?v= を最新タイムスタンプに書き換え、全端末のキャッシュを無効化。"""
+    try:
+        with open(INDEX_FILE, encoding="utf-8") as f:
+            html = f.read()
+        ver = datetime.now().strftime("%Y%m%d%H%M")
+        new_html, n = re.subn(r'app\.js\?v=\d+', 'app.js?v=' + ver, html)
+        if n == 0:
+            new_html = html.replace('src="app.js"', 'src="app.js?v=' + ver + '"')
+        if new_html != html:
+            with open(INDEX_FILE, "w", encoding="utf-8") as f:
+                f.write(new_html)
+            log(f"キャッシュバスター適用: app.js?v={ver}")
+            return True
+        return False
+    except Exception as e:
+        log(f"キャッシュバスター失敗: {e}")
+        return False
 
 def git_publish(msg):
     """変更をコミットしてGitHubへプッシュ（公開URLへ反映）。"""
@@ -475,6 +495,7 @@ def sync_viewer():
         payload["news"] = []
         payload["ai_text"] = ""
     write_json(LATEST_JSON, payload)
+    bust_viewer_cache()
     ok, out = git_publish("📤 [admin] 閲覧サイトへ最新競馬情報を反映")
     return jsonify({"success": ok, "output": out, "count": len(payload.get("upcoming", [])) + len(payload.get("results", []))})
 

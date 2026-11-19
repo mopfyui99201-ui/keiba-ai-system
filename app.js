@@ -55,6 +55,9 @@ let selectedRaceName = '';
 let editingLearnIndex = -1;
 let reflections = [];
 let stationItems = [];
+let condTrack = '良';
+let condDist = '';
+const pct = v => Math.min(100, Math.max(0, Math.round(v)));
 
 /* ---------- 状態保存 ---------- */
 function loadJSON(key, fb) {
@@ -473,6 +476,20 @@ function setBudget(v) {
   document.getElementById('budget').value = v;
   document.querySelectorAll('.quick-btn').forEach(b => b.classList.toggle('active', b.textContent.replace(/,/g,'') === String(v)));
 }
+function setCond(group, btn) {
+  const box = document.getElementById(group === 'track' ? 'cond-track' : 'cond-dist');
+  if (!box) return;
+  const v = btn.dataset.v;
+  // 距離はトグル式（同じボタン再タップで解除）
+  if (group === 'dist' && condDist === v) {
+    btn.classList.remove('active');
+    condDist = '';
+    return;
+  }
+  box.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  if (group === 'track') condTrack = v; else condDist = v;
+}
 
 /* ---------- 予想ロジック ---------- */
 function parseNumList(str) {
@@ -513,9 +530,15 @@ function learningBoostMap(raceName) {
     const r = l.race || '';
     return (r && (raceName.includes(r) || r.includes(raceName))) || (l.text || '').includes(raceName);
   });
-  const texts = matched.map(l => (l.race ? l.race + ' ' : '') + (l.text || '')).join('\n');
-  const nums = texts.match(/(?<!\d)(\d{1,2})(?!\d)/g) || [];
-  nums.forEach(n => { const v = parseInt(n, 10); if (v >= 1 && v <= 18) boost[v] = (boost[v] || 0) + 1; });
+  // 鮮度重み付け：直近30日以内の学習データは重み2倍
+  const now = Date.now();
+  matched.forEach(l => {
+    const ageDays = (now - new Date(l.date || 0).getTime()) / 86400000;
+    const w = ageDays <= 30 ? 2 : 1;
+    const text = (l.race ? l.race + ' ' : '') + (l.text || '');
+    const nums = text.match(/(?<!\d)(\d{1,2})(?!\d)/g) || [];
+    nums.forEach(n => { const v = parseInt(n, 10); if (v >= 1 && v <= 18) boost[v] = (boost[v] || 0) + w; });
+  });
   // 答え合わせ結果（同じ競馬場・関連レースの実際の3着内馬）もブースト
   const venue = venueOfRace(raceName);
   reflections.forEach(r => {
@@ -536,6 +559,38 @@ function categoryOfVenue(venue) {
   if (BANEI_VENUES.includes(venue)) return 'banei';
   return 'g1';
 }
+/* 馬場状態・距離条件に合致する学習データから馬番ブーストを生成 */
+const COND_KEYWORDS = {
+  track: { '良': ['良馬場', '馬場良'], '稍重': ['稍重'], '重': ['重馬場', '馬場が重', '馬場重'], '不良': ['不良馬場', '馬場不良', '不良'] },
+  dist:  { '短距離': ['短距離', '1400m', '1200m', '1000m'], 'マイル': ['マイル', '1600m'], '中距離': ['中距離', '1800m', '2000m', '2200m'], '長距離': ['長距離', '2400m', '2500m', '3000m'] },
+};
+function conditionBoostMap() {
+  const boost = {};
+  const kws = [];
+  if (condTrack && condTrack !== '良') kws.push(...(COND_KEYWORDS.track[condTrack] || []));
+  if (condTrack === '良') kws.push('良馬場', '馬場良');
+  if (condDist) kws.push(...(COND_KEYWORDS.dist[condDist] || []));
+  if (!kws.length) return boost;
+  const now = Date.now();
+  learnings.forEach(l => {
+    const text = ((l.race || '') + ' ' + (l.text || ''));
+    if (!kws.some(k => text.includes(k))) return;
+    const ageDays = (now - new Date(l.date || 0).getTime()) / 86400000;
+    const w = (ageDays <= 30 ? 2 : 1) + 1; // 条件一致はさらに+1
+    const nums = text.match(/(?<!\d)(\d{1,2})(?!\d)/g) || [];
+    nums.forEach(n => { const v = parseInt(n, 10); if (v >= 1 && v <= 18) boost[v] = (boost[v] || 0) + w; });
+  });
+  return boost;
+}
+function conditionEvidence() {
+  const kws = [];
+  if (condTrack === '良') kws.push('良馬場', '馬場良');
+  else if (condTrack) kws.push(...(COND_KEYWORDS.track[condTrack] || []));
+  if (condDist) kws.push(...(COND_KEYWORDS.dist[condDist] || []));
+  if (!kws.length) return '';
+  const hit = learnings.find(l => kws.some(k => ((l.race || '') + ' ' + (l.text || '')).includes(k)));
+  return hit ? ('条件一致: ' + (hit.race || hit.text || '').slice(0, 30)) : '';
+}
 function hashSeed(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
@@ -549,6 +604,8 @@ function runPredict() {
   const exclude = new Set(parseNumList(document.getElementById('exclude-horses').value));
   const include = new Set(parseNumList(document.getElementById('include-horses').value));
   const boost = learningBoostMap(raceName);
+  const cboost = conditionBoostMap();
+  Object.keys(cboost).forEach(k => { boost[k] = (boost[k] || 0) + cboost[k]; });
 
   let horses = parseHorses(raw).filter(h => !exclude.has(h.umaban));
   let fallback = false;
@@ -579,9 +636,9 @@ function runPredict() {
   const top = horses.slice(0, 3);
   const next3 = horses.slice(3, 6);
   const favOdds = fallback ? 6.0 : top[0].odds;
-  const conf = fallback
+  const conf = pct(fallback
     ? Math.max(45, Math.min(70, Math.round(70 - favOdds)))
-    : Math.max(50, Math.min(98, Math.round(98 - favOdds * 9)));
+    : Math.max(50, Math.min(98, Math.round(98 - favOdds * 9))));
 
   const t1 = top[0].umaban + '-' + top[1].umaban;
   const t2 = top[0].umaban + ',' + top[1].umaban + '-' + top[2].umaban;
@@ -603,6 +660,8 @@ function runPredict() {
   document.getElementById('res-sanrentan').textContent = tan;
   document.getElementById('res-budget').textContent = budgetText;
   const ev = evidenceFor(raceName);
+  const cev = conditionEvidence();
+  if (cev && !ev.includes(cev)) ev.push(cev);
   const evEl = document.getElementById('res-evidence');
   if (evEl) evEl.textContent = ev.length ? ev.join(' ／ ') : '-';
   document.getElementById('result-panel').classList.add('show');
@@ -633,6 +692,36 @@ function copyTickets() {
   function fallbackCopy() {
     const ta = document.createElement('textarea');
     ta.value = windowLastTickets; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+  }
+}
+function shareResult() {
+  if (!windowLastTickets && !reflections.length) { alert('シェアするデータがありません'); return; }
+  const stats = learnStats();
+  const pnl = pnlSummary();
+  const last = reflections[reflections.length - 1];
+  const lines = ['🎯 競馬AI予想 的中・成長実績レポート', ''];
+  if (last) {
+    lines.push('📍 レース: ' + (last.race || '-'));
+    lines.push('🥇 実際の着順: ' + last.actualTop3.join(' → ') + '着');
+    const hitTxt = [last.hits.umaren && '馬連', last.hits.umatan && '馬単', last.hits.sanrenpuku && '3連複', last.hits.sanrentan && '3連単'].filter(Boolean).join('・') || '不的中';
+    lines.push('🎯 的中券種: ' + hitTxt);
+    lines.push('💰 収支: ' + (last.profit >= 0 ? '+' : '') + last.profit.toLocaleString() + '円（投資' + (last.invested || 0).toLocaleString() + '円 → 払戻' + (last.payout || 0).toLocaleString() + '円）');
+    lines.push('💡 AIの学び: ' + (last.lesson || '-'));
+    lines.push('');
+  }
+  if (windowLastTickets) lines.push(windowLastTickets, '');
+  lines.push('🤖 AIレベル: Lv.' + stats.lv + '（学習スコア ' + Math.round(stats.score) + '）');
+  if (pnl.count) lines.push('📊 通算: 的中率 ' + pct(pnl.hitRate) + '% / 回収率 ' + pct(pnl.recovery) + '% / 収支 ' + (pnl.profit >= 0 ? '+' : '') + pnl.profit.toLocaleString() + '円（' + pnl.count + 'レース）');
+  lines.push('', '― 競馬AI予想 Elizabeth ―');
+  const text = lines.join('\n');
+  const done = () => alert('📤 シェア用テキストをコピーしました:\n\n' + text.slice(0, 200) + (text.length > 200 ? '…' : ''));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy());
+  } else { fallbackCopy(); }
+  function fallbackCopy() {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
   }
 }
@@ -680,6 +769,9 @@ function saveLearning() {
     learnings[editingLearnIndex] = rec;
     editingLearnIndex = -1;
   } else {
+    // 重複登録防止：同じカテゴリ・場・レース名が既にあればスキップ
+    const dup = learnings.some(l => l.category === rec.category && l.venue === rec.venue && (l.race || '') === rec.race && rec.race);
+    if (dup) { alert('同じレースの学習データが既に登録されています（重複スキップ）'); return; }
     learnings.push(rec);
   }
   saveJSON('keiba_learnings', learnings);
@@ -805,8 +897,8 @@ function pnlSummary() {
   const n = reflections.length;
   return {
     invested, payout, profit: payout - invested,
-    hitRate: n ? Math.round(hits / n * 100) : 0,
-    recovery: invested ? Math.round(payout / invested * 100) : 0,
+    hitRate: pct(n ? hits / n * 100 : 0),
+    recovery: pct(invested ? payout / invested * 100 : 0),
     count: n,
   };
 }
@@ -979,7 +1071,7 @@ async function fetchStationData() {
     if (uniq.length) setSt('外部取得0件のため内蔵データから補完します…');
   }
   if (!uniq.length) { setSt('⚠️ 条件に合うデータが見つかりませんでした'); renderLearningGraph(); return; }
-  let added = 0;
+  let added = 0, skipped = 0;
   uniq.forEach(it => {
     const kind = it.kind || classifyStationKind(it.title);
     const cat = target !== 'all' ? target : (categoryOfVenue(venueOfRace(it.title)) || 'jra');
@@ -992,11 +1084,12 @@ async function fetchStationData() {
       date: new Date().toISOString(), source: 'station',
     };
     if (!learnings.some(l => l.race === rec.race && l.category === cat)) { learnings.push(rec); added++; }
+    else skipped++;
     stationItems.push({id: rec.id, title: it.title, url: it.link, date: it.date, kind, genre: cat, venue: ven});
   });
   saveJSON('keiba_learnings', learnings);
   saveJSON('keiba_station_items', stationItems.slice(-200));
-  setSt('✅ ' + added + '件をAIに保存しました（全' + learnings.length + '件）');
+  setSt('✅ ' + added + '件をAIに保存しました（全' + learnings.length + '件）' + (skipped ? '（重複スキップ：' + skipped + '件）' : ''));
   renderLearnList(); populateQuickSelect(); renderLearningGraph();
 }
 
@@ -1007,7 +1100,7 @@ function learnStats() {
   const resultCount = predictionsHistory.length + reflections.length;
   const score = learnings.length + stationItems.length * 0.5 + predictionsHistory.length * 2 + reflections.length * 3;
   const lv = Math.min(10, 1 + Math.floor(score / 8));
-  const prog = Math.min(100, Math.round(((score % 8) / 8) * 100));
+  const prog = pct(((score % 8) / 8) * 100);
   return {byCat, resultCount, score, lv, prog};
 }
 function setupCanvas(cv) {

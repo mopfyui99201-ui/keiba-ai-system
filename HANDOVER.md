@@ -267,3 +267,12 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
   - `builtinStationItems()`：外部・同期データが0件のとき、内蔵DB（BIG_RACES・VENUE_EVENTSの場別メイン/サブ重賞・開催傾向メモ）から対象カテゴリの項目を生成してフォールバック保存
   - フィルタを `filterRaw()` に集約し外部→内蔵の2段適用。nar判定の場名リストを拡充。重複除去をURL→タイトル基準に修正（内蔵項目が同一URLで潰れるバグを解消）
 - 検証: node --check OK。スタブで NAR選択→Googleニュース2件保存、外部0件→内蔵DB16件保存を確認。admin `/api/keiba-update` 実測94件
+
+## PWA対応・条件指定・シェア・重複防止・キャッシュバスター（ルール26〜30）
+- PWA：`manifest.json`（standalone・#1e1e1e）＋`icon-192.png`/`icon-512.png`（PIL生成）を追加。index.html headに manifest/apple-mobile-web-app-capable/theme-color/apple-touch-icon を設定 → ホーム画面追加で全画面アプリ起動
+- 馬場・距離ワンタップ：予想画面にピル型トグル（馬場:良/稍重/重/不良、距離:短距離/マイル/中距離/長距離・再タップ解除）。`conditionBoostMap()` が条件キーワードを含む学習データの馬番を鮮度込みでブースト、`conditionEvidence()` で根拠情報に「条件一致」表示
+- シェアカード：`shareResult()` が直近の答え合わせ結果（着順/的中券種/収支/学び）＋買い目＋AIレベル/通算成績を整形しクリップボードコピー
+- 重複防止・鮮度：saveLearning は同カテゴリ・場・レース名の既存データをスキップ。fetchStationData は「（重複スキップ：N件）」を表示。learningBoostMap/conditionBoostMap は30日以内を重み2倍
+- 数値キャップ：`pct()`（Math.min(100,Math.max(0,round))）を新設し、確信度・的中率・回収率・学習進捗に適用（101%超過を完全防止）
+- キャッシュバスター：`admin_server.py` の `bust_viewer_cache()` が sync-viewer 実行時に index.html の `app.js?v=` を `YYYYMMDDHHMM` へ自動書換→git push。全端末へ即反映
+- 検証: node --check/py_compile OK。pct(150)=100・条件ブースト・重複スキップ・シェア文面・bust_viewer_cache実測OK
