@@ -182,6 +182,12 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
     </div>
   </div>
   <div class="card">
+    <h3>🔄 最新レース情報を取得</h3>
+    <p style="font-size:11px;color:#8e8e93;margin:0 0 8px;">netkeiba等の公開RSSからニュース・レース情報を取得します（失敗時は同期データを表示）</p>
+    <button class="btn btn-primary" onclick="fetchExternalNews()">🔄 外部から最新情報を取得</button>
+    <span id="ext-status-home" style="font-size:11px;color:#8e8e93;margin-left:8px;"></span>
+  </div>
+  <div class="card">
     <h3>⭐ お気に入り登録一覧</h3>
     <div id="fav-home"></div>
   </div>
@@ -320,8 +326,17 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
   <div class="card">
     <h3>🎯 AI予想・買い目</h3>
     <div class="field">
-      <label>① 対象レースを選択</label>
-      <select id="race-select" onchange="onRaceSelect()"></select>
+      <label>① 対象レースを選択（競馬場 → レース番号）</label>
+      <select id="venue-select" onchange="onVenueRaceChange()"></select>
+      <select id="race-select" onchange="onVenueRaceChange()" style="margin-top:6px;"></select>
+    </div>
+    <div class="field">
+      <label>② 注目・最新レースからクイック選択（任意）</label>
+      <select id="quick-select" onchange="onQuickSelect()"></select>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+        <button class="btn btn-primary" style="padding:8px 12px;font-size:12px;flex:1;min-width:170px;" onclick="fetchExternalNews()">🔄 外部から最新情報を取得</button>
+        <span id="ext-status" style="font-size:11px;color:#8e8e93;"></span>
+      </div>
     </div>
     <details class="free-input">
       <summary>✏️ 自由入力・出馬表コピペ（馬番・馬名・オッズを貼り付け）</summary>
@@ -361,6 +376,7 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
       <div class="result-item"><span class="label">戦略①：</span><span class="value">本命勝負</span></div>
       <div class="result-item"><span class="label">戦略②：</span><span class="value">ハイブリッド</span></div>
       <div class="result-item"><span class="label">資金配分：</span><span class="value ticket-money" id="res-budget" style="font-size:11px;">-</span></div>
+      <div class="result-item"><span class="label">📡 根拠情報：</span><span class="value" id="res-evidence" style="font-size:11px;">-</span></div>
     </div>
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn btn-copy" style="flex:1;" onclick="copyTickets()">📋 買い目をコピー</button>

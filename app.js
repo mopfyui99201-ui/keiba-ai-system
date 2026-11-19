@@ -215,16 +215,14 @@ function renderFavorites() {
   });
 }
 function goPredict(venue) {
-  const sel = document.getElementById('race-select');
-  if (!sel) return;
-  let label = venue + '11R メイン';
-  if (![...sel.options].some(o => o.value === label)) {
-    const opt = document.createElement('option');
-    opt.value = label; opt.textContent = '⭐ ' + label;
-    sel.appendChild(opt);
+  initVenueRaceSelects();
+  const vs = document.getElementById('venue-select');
+  const rs = document.getElementById('race-select');
+  if (vs && rs) {
+    vs.value = venue;
+    rs.value = '11';
+    onVenueRaceChange();
   }
-  sel.value = label;
-  onRaceSelect();
   setTab('predict');
 }
 
@@ -304,23 +302,168 @@ function loadLatest() {
   }).catch(() => {});
 }
 
-/* ---------- レース選択 ---------- */
-function populateRaceSelect() {
-  const sel = document.getElementById('race-select');
+/* ---------- レース選択（競馬場 → レース番号 → クイック選択） ---------- */
+let extNews = loadJSON('keiba_ext_news', []);
+
+const VENUE_GROUPS = [
+  {label:'🏇 中央競馬（JRA）', venues:JRA_VENUES},
+  {label:'🐎 地方競馬（NAR）', venues:NAR_VENUES},
+  {label:'🛷 特殊競馬',        venues:BANEI_VENUES},
+];
+
+function initVenueRaceSelects() {
+  const vs = document.getElementById('venue-select');
+  const rs = document.getElementById('race-select');
+  if (vs && !vs.options.length) {
+    vs.innerHTML = '<option value="">（競馬場を選択）</option>' +
+      VENUE_GROUPS.map(g =>
+        '<optgroup label="' + esc(g.label) + '">' +
+        g.venues.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join('') +
+        '</optgroup>').join('');
+  }
+  if (rs && !rs.options.length) {
+    rs.innerHTML = '<option value="">（レース番号を選択）</option>' +
+      Array.from({length:12}, (_,i) => {
+        const n = i + 1;
+        const label = n === 11 ? '11R（メイン）' : n === 12 ? '12R（最終）' : n + 'R';
+        return '<option value="' + n + '">' + label + '</option>';
+      }).join('');
+  }
+}
+
+function onVenueRaceChange() {
+  const vs = document.getElementById('venue-select');
+  const rs = document.getElementById('race-select');
+  if (!vs || !rs) return;
+  const venue = vs.value;
+  const num = rs.value;
+  if (!venue || !num) { selectedRaceName = ''; return; }
+  let label = venue + num + 'R';
+  if (num === '11') label += ' メイン';
+  else if (num === '12') label += ' 最終';
+  selectedRaceName = label;
+}
+
+function populateRaceSelect() { populateQuickSelect(); }
+
+function populateQuickSelect() {
+  const sel = document.getElementById('quick-select');
   if (!sel) return;
   const cur = sel.value;
-  const opts = [...RACE_PRESETS];
+  const opts = ['（注目・最新レースを選択）'];
+  RACE_PRESETS.slice(1).forEach(t => { if (!opts.includes(t)) opts.push(t); });
   if (latestData && latestData.upcoming) {
     latestData.upcoming.slice(0, 10).forEach(it => {
-      if (it.title && !opts.includes(it.title)) opts.push('【最新】' + it.title);
+      if (it.title && !opts.includes('【最新】' + it.title)) opts.push('【最新】' + it.title);
     });
   }
+  (extNews || []).slice(0, 10).forEach(it => {
+    if (it.title && !opts.includes('【外部】' + it.title)) opts.push('【外部】' + it.title);
+  });
   sel.innerHTML = opts.map(o => '<option value="' + esc(o) + '">' + esc(o) + '</option>').join('');
   if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
 }
-function onRaceSelect() {
-  const v = document.getElementById('race-select').value;
-  selectedRaceName = (v && !v.startsWith('（')) ? v.replace(/^【最新】/, '') : '';
+
+function onQuickSelect() {
+  const sel = document.getElementById('quick-select');
+  const v = sel ? sel.value : '';
+  if (!v || v.startsWith('（')) return;
+  selectedRaceName = v.replace(/^【(?:最新|外部)】/, '');
+  // 可能なら競馬場・レース番号セレクトも同期（表示のみ、選択名は保持）
+  const m = selectedRaceName.match(/^(東京|中山|京都|阪神|中京|新潟|福島|小倉|函館|札幌|大井|川崎|船橋|浦和|門別|盛岡|水沢|金沢|笠松|名古屋|園田|姫路|高知|佐賀|帯広(?:\(ばんえい\)|（ばんえい）)?)\s*(\d{1,2})R?/);
+  if (m) {
+    const vs = document.getElementById('venue-select');
+    const rs = document.getElementById('race-select');
+    if (vs && rs) {
+      const venue = m[1].includes('帯広') ? '帯広(ばんえい)' : m[1];
+      const num = String(parseInt(m[2], 10));
+      if ([...vs.options].some(o => o.value === venue) && [...rs.options].some(o => o.value === num)) {
+        vs.value = venue;
+        rs.value = num;
+      }
+    }
+  }
+}
+
+/* ---------- 外部情報取得（公開RSS＋CORSプロキシ、失敗時は同期データ） ---------- */
+function setExtStatus(msg) {
+  const a = document.getElementById('ext-status');
+  const b = document.getElementById('ext-status-home');
+  if (a) a.textContent = msg;
+  if (b) b.textContent = msg;
+}
+function parseRssXmlItems(xml) {
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'text/xml');
+    const nodes = doc.getElementsByTagName('item');
+    const out = [];
+    for (let i = 0; i < Math.min(nodes.length, 20); i++) {
+      const it = nodes[i];
+      out.push({
+        title: (it.getElementsByTagName('title')[0] || {}).textContent || '',
+        link: (it.getElementsByTagName('link')[0] || {}).textContent || '',
+        date: ((it.getElementsByTagName('pubDate')[0] || {}).textContent || '').slice(0, 16),
+      });
+    }
+    return out;
+  } catch (e) { return []; }
+}
+async function fetchExternalNews() {
+  setExtStatus('取得中…');
+  const feedUrl = 'https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba';
+  const sources = [
+    {type:'json', url:'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl)},
+    {type:'xml',  url:'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl)},
+  ];
+  let items = [];
+  for (const s of sources) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const res = await fetch(s.url, {signal: ctrl.signal});
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      if (s.type === 'json') {
+        const j = await res.json();
+        if (j && j.status === 'ok' && Array.isArray(j.items)) {
+          items = j.items.slice(0, 20).map(it => ({
+            title: it.title || '', link: it.link || '',
+            date: (it.pubDate || '').slice(0, 16),
+          }));
+        }
+      } else {
+        items = parseRssXmlItems(await res.text());
+      }
+      if (items.length) break;
+    } catch (e) { /* 次のソースへフォールバック */ }
+  }
+  const NG = ['ビール','キャンペーン','グッズ','プレゼント','求人','採用','コラボ','入場券','トークショー','テレビ','ラジオ'];
+  const filtered = items.filter(it => it.title && it.title.length > 5 && !NG.some(w => it.title.includes(w)));
+  if (!filtered.length) {
+    setExtStatus('⚠️ 外部取得に失敗（同期データを表示中）');
+    populateQuickSelect();
+    return;
+  }
+  extNews = filtered.map(it => ({
+    title: it.title, url: it.link || '', date: it.date || '',
+    source: 'netkeiba(外部)', kind: 'news', genre: 'jra',
+  }));
+  saveJSON('keiba_ext_news', extNews);
+  setExtStatus('✅ ' + extNews.length + '件取得（' + new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'}) + '）');
+  populateQuickSelect();
+}
+
+/* 予想の根拠となる外部/同期ニュースを抽出 */
+function evidenceFor(raceName) {
+  if (!raceName) return [];
+  const key = raceName.replace(/（メイン）|\(メイン\)|最終/g, '').trim();
+  const pool = [];
+  (extNews || []).forEach(it => pool.push(it.title));
+  if (latestData) {
+    ['upcoming','results','news'].forEach(k => (latestData[k] || []).forEach(it => { if (it.title) pool.push(it.title); }));
+  }
+  const words = key.split(/\s+/).filter(w => w.length >= 2);
+  return pool.filter(t => words.some(w => t.includes(w))).slice(0, 2);
 }
 function setBudget(v) {
   document.getElementById('budget').value = v;
@@ -437,6 +580,9 @@ function runPredict() {
   document.getElementById('res-renpuku').textContent = t3;
   document.getElementById('res-sanrentan').textContent = tan;
   document.getElementById('res-budget').textContent = budgetText;
+  const ev = evidenceFor(raceName);
+  const evEl = document.getElementById('res-evidence');
+  if (evEl) evEl.textContent = ev.length ? ev.join(' ／ ') : '-';
   document.getElementById('result-panel').classList.add('show');
 
   document.getElementById('target-content').textContent = raceName + '：' + t1 + ' / ' + t2 + (fallback ? '（参考）' : '');
@@ -592,5 +738,6 @@ renderHistory();
 renderLearnList();
 onLearnCategoryChange();
 populateRaceSelect();
+initVenueRaceSelects();
 initCounter();
 loadLatest();

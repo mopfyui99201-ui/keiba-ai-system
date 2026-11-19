@@ -130,3 +130,9 @@
 - タブバー廃止→ホームメニュー＋戻るボタン方式は、panel-home を1つ増やして setTab('home') を既定にするだけで既存6画面を無改修で流用できた
 - target-card（本日の注目レース）はID一意制約があるため predict パネルから home パネルへ丸ごと移動させた
 - お気に入りは競馬場別3枠に加え、ホーム用に全ジャンルを集約する fav-home を renderFavorites 内で生成
+
+## 閲覧者側ブラウザからの外部情報取得
+- JRA/netkeibaのHTMLはブラウザから直接fetchするとCORSで弾かれるため、公開RSSをCORS対応プロキシ経由で取得する方式にした
+- プロキシは rss2json API（JSONで返る・実測ok）を第一、codetabs proxy（XML返却・DOMParserで解析）を第二のフォールバックにした。alloriginsは応答が不安定で採用見送り
+- 取得失敗時は例外を握りつぶしてステータス表示のみ行い、既存の管理者同期JSON（latest_keiba.json）とlocalStorageの学習データがそのまま使える設計。外部データは localStorage `keiba_ext_news` に保存しリロード後も残る
+- 3段階選択は「場×R→selectedRaceName生成」「クイック選択→レース名セット＋可能なら場/R同期」の双方向。クイック選択でフルレース名（例:中山11R 有馬記念）を保持するため、onVenueRaceChangeの上書きを避けてセレクト値のみ直接代入する実装にした

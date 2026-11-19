@@ -228,3 +228,17 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
   - `goHome()` 追加。`renderFavorites()` にホーム用全件集約（ジャンル絵文字付き）を追加
   - 既存機能（お気に入りトグル/攻略メモ/AI予想/学習/同期表示）はID維持でそのまま動作
 - 検証: node --check OK、全必須ID存在確認、画面遷移ロジックのスタブテスト
+
+## AI予想の3段階レース選択＋閲覧者側外部情報取得
+- `index.html`
+  - 予想フォームの「①対象レース」を競馬場セレクト（optgroupでJRA/NAR/特殊の3分類）＋レース番号セレクト（1R〜12R、11Rは「11R（メイン）」12Rは「12R（最終）」）の2段構成に変更
+  - 「②注目・最新レースからクイック選択」セレクト追加（プリセット＋同期upcoming＋外部取得ニュースから自動生成）
+  - ホーム画面と予想画面の両方に「🔄 外部から最新情報を取得」ボタン（`fetchExternalNews()`）とステータス表示（`ext-status`/`ext-status-home`）
+  - 結果パネルに「📡 根拠情報」行（`res-evidence`）を追加
+- `app.js`
+  - `initVenueRaceSelects()`：競馬場optgroup＋1R〜12Rを初期構築。`onVenueRaceChange()`：場×Rから `selectedRaceName` を生成（11R→「◯◯11R メイン」、12R→「◯◯12R 最終」）
+  - `populateQuickSelect()`（旧populateRaceSelectを改修）：プリセット＋`latestData.upcoming`（【最新】）＋`extNews`（【外部】）を選択肢化。`onQuickSelect()`：選択時にレース名をセットし、場・Rが読み取れればセレクトも同期
+  - `fetchExternalNews()`：netkeiba RSSを rss2json API → codetabs プロキシの順でフェッチ（12秒タイムアウト、全失敗時は警告表示のみで同期データにフォールバック）。NGワード軽量フィルタ後 `keiba_ext_news` にlocalStorage保存
+  - `evidenceFor(raceName)`：外部ニュース＋同期データからレース名に関連するタイトルを最大2件抽出し、予想結果の「根拠情報」に表示
+  - `goPredict(venue)`：お気に入り等からのジャンプ時に場・11Rを自動セット
+- 検証: node --check OK。DOMスタブで 1R〜12R全選択肢・11R/12R表記・場×R連動・クイック選択同期・goPredict・外部取得成功/失敗フォールバックを確認
