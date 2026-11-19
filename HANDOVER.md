@@ -26,8 +26,8 @@
    - 管理サーバー起動→ `curl http://127.0.0.1:8765/` = 200、`/api/status`・`/api/logs` 正常
    - `.gitignore` に `venv/` 追加
 
-### 残課題
-- **GitHub Actions（keiba_pipeline.yml）依然として壊れたまま**（廃止済み cloud_task.py を参照）。閲覧用.appはGitHub Pagesを見るため、index.htmlの更新はpush後に反映される
+### 残課題 → 解決済み（同日追記）
+- ~~GitHub Actions（keiba_pipeline.yml）が壊れたまま~~ → **無効化完了**: `.github/workflows/keiba_pipeline.yml` をリポジトリ直下の `keiba_pipeline.yml.disabled` に移動（GitHubはworkflows外のファイルを実行しないため失敗通知は停止）。先頭に無効化理由と再有効化手順のコメントを追記。ファイル自体は参考用に保持。
 - admin_server.py はFlask開発サーバー（本番非推奨だがlocalhost専用なので許容範囲）
 
 ### 次の作業候補
