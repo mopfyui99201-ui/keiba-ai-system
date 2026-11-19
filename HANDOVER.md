@@ -1,5 +1,15 @@
 # HANDOVER.md - keiba-elizabeth-app 引き継ぎメモ
 
+## 2026-11-19（夜）GitHub Pages 公開URL確定
+
+- **公開URL**: https://mopfyui99201-ui.github.io/keiba-ai-system/
+- リモート: https://github.com/mopfyui99201-ui/keiba-ai-system.git （ユーザー名/リポジトリ名から自動生成されるPages URL）
+- **動作確認済み**: curlでHTTP 200、配信中HTMLが最新のindex.html（タイトル「競馬AI予想 - 閲覧用」、title-bar/nav-tab構造を含む）であることを確認。Pagesは有効・公開状態のため追加設定不要
+- **閲覧用.app**: `/Users/m.kairi.c/Desktop/競馬AI予想（閲覧用）.app/Contents/MacOS/run` は既にこの正確なURLをBrave `--app` モードで開く設定済み（ローカルファイル参照なし）。修正不要を確認
+- gh CLIは未インストールだが、Pages自体が正常稼働しているため有効化作業は不要
+
+---
+
 ## 2026-11-19（夜）補助AI（Devin）第2作業：UI仕上げ・.app修復・検証
 
 ### 実施内容
