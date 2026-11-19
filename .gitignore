@@ -11,4 +11,10 @@ venue_weights.json
 ai_settings.json
 
 # macOS
-.DS_Storeadmin.log
+.DS_Store
+
+# Python仮想環境
+venv/
+
+# 管理サーバーログ
+admin.log

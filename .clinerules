@@ -6,21 +6,21 @@
 - 共通ルールは親ディレクトリの .clinerules に準拠
 
 ## プロジェクト固有設定
-- メインエントリ: app.py
-- 予測ロジック: predictor.py
-- スクレイピング: scraper.py
-- クラウドタスク: cloud_task.py
-- Webフロントエンド: index.html, auth.js, style.css
-- GitHub Actions: .github/workflows/keiba_pipeline.yml
-- データ出力先: data/（.gitignoreで除外、GitHub Actionsで生成）
+- 閲覧用フロントエンド: index.html（静的・localStorage完結・fetch不使用）
+- 管理者コンソール: admin_server.py（Flask・127.0.0.1:8765）+ admin.html
+- 管理サーバーログ: admin.log（実行時生成）
+- アイコン生成: make_icons.py → icons/（.icns + .iconset）
+- データ出力先: data/（現在は空。.gitignoreで除外）
+- ※2026-11-19の再構築（89b1b5c / 1b6271f）で app.py, predictor.py, scraper.py, cloud_task.py, auth.js, style.css, viewer_app.py, admin_app.py は廃止済み。予測は index.html 内のクライアントJSで実施
 
 ## ビルド・実行コマンド
-- 構文チェック: python -m py_compile app.py predictor.py scraper.py cloud_task.py
-- GUI起動テスト: python -c "import tkinter as tk; import app; root=tk.Tk(); app.KeibaApp(root); root.after(3000,root.quit); root.mainloop()"
-- Macアプリビルド: pyinstaller --windowed --clean app.py
-- クラウド予想実行: python cloud_task.py --mode predict
-- クラウド学習実行: python cloud_task.py --mode learn
-- フル実行: python cloud_task.py --mode full
+- 管理サーバー起動: python admin_server.py（http://127.0.0.1:8765）
+- 構文チェック: python -m py_compile admin_server.py make_icons.py
+- アイコン再生成: python make_icons.py
+- 閲覧ページ確認: index.html をブラウザで直接開く（静的ファイル）
+
+## 注意（未解決）
+- .github/workflows/keiba_pipeline.yml は廃止済みの cloud_task.py を参照しており、現状では失敗する。パイプラインの扱い（無効化 or 再設計）は要判断
 
 ## Git操作
 - リモート: https://github.com/mopfyui99201-ui/keiba-ai-system.git

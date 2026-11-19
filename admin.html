@@ -3,112 +3,151 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>競馬AI管理コンソール（管理者専用）</title>
+<title>競馬AI管理コンソール - 管理者専用</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; background: #1e1e1e; color: #f3f3f3; line-height: 1.5; padding: 12px; }
-.app-container { max-width: 520px; margin: 0 auto; }
-.header-card { background: linear-gradient(135deg, #992222 0%, #661111 100%); border: 1px solid #992222; border-radius: 10px; padding: 14px; margin-bottom: 10px; text-align: center; }
-.header-card h1 { font-size: 17px; margin-bottom: 4px; }
-.header-card p { font-size: 12px; color: #f8a9a9; }
-.status-bar { background: #2d2d2d; border: 2px solid #4caf50; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; color: #4caf50; }
-.card { background: #252526; border: 1px solid #3c3c3c; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-.card h2 { font-size: 14px; color: #007acc; margin-bottom: 8px; border-bottom: 1px solid #3c3c3c; padding-bottom: 4px; }
-.btn-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.btn { padding: 10px 16px; border: none; border-radius: 6px; color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; transition: 0.2s; flex: 1; min-width: 140px; }
-.btn-main { background: #333333; }
-.btn-main:hover { background: #444444; }
-.btn-danger { background: #992222; }
-.btn-danger:hover { background: #661111; }
-.btn-file { background: #6366f1; }
-.btn-file:hover { background: #4f46e5; }
-.result { margin-top: 8px; padding: 8px; border-radius: 4px; display: none; font-size: 12px; }
-.result.success { background: rgba(76,175,80,0.2); border: 1px solid #4caf50; color: #c8e6c9; }
-.result.error { background: rgba(153,34,34,0.2); border: 1px solid #992222; color: #f8a9a9; }
-.log-box { background: #1e1e1e; border: 1px solid #3c3c3c; border-radius: 6px; padding: 10px; margin-top: 8px; font-family: monospace; font-size: 11px; color: #a9a9a9; height: 150px; overflow-y: auto; }
-.warning { color: #ff9800; font-size: 12px; margin-bottom: 8px; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; background: #1e1e1e; color: #ffffff; line-height: 1.5; padding: 12px; }
+.app-container { max-width: 480px; margin: 0 auto; }
+.title-bar { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px 10px 0 0; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+.traffic { display: flex; gap: 6px; }
+.traffic i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.traffic .r { background: #ff5f57; } .traffic .y { background: #febc2e; } .traffic .g { background: #28c840; }
+.title-bar h1 { font-size: 14px; font-weight: 600; color: #cccccc; flex: 1; text-align: center; margin-right: 40px; }
+.status-bar { background: #252526; border: 2px solid #30d158; border-top: none; border-radius: 0 0 8px 8px; padding: 9px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; color: #30d158; }
+.card { background: #2d2d30; border: 1px solid #3e3e42; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+.card h2 { font-size: 13px; color: #0a84ff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #3e3e42; }
+.btn-col { display: flex; flex-direction: column; gap: 8px; }
+.btn { display: block; width: 100%; padding: 12px 16px; border: 1px solid #3e3e42; border-radius: 8px; background: #252526; color: #ffffff; font-weight: 600; cursor: pointer; font-size: 13px; text-align: center; transition: all 0.15s; }
+.btn:hover { background: #3e3e42; }
+.btn:active { background: #0a5ea8; border-color: #0a5ea8; }
+.divider { border: none; border-top: 1px solid #3e3e42; margin: 12px 0; }
+.btn-danger { background: #b91c1c; border-color: #991b1b; color: #ffffff; }
+.btn-danger:hover { background: #991b1b; }
+.result { margin-top: 10px; padding: 10px; border-radius: 6px; display: none; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.result.success { background: rgba(48,209,88,0.12); border: 1px solid #30d158; color: #30d158; }
+.result.error { background: rgba(185,28,28,0.15); border: 1px solid #b91c1c; color: #ff9f0a; }
+.log-box { background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 8px; padding: 10px; margin-top: 10px; font-family: Menlo, monospace; font-size: 11px; color: #8e8e93; height: 170px; overflow-y: auto; white-space: pre-wrap; }
+.file-list { font-size: 12px; color: #cccccc; margin-bottom: 8px; }
+.file-list div { padding: 2px 0; }
+@media (max-width: 480px) { body { padding: 8px; } .app-container { max-width: 100%; } }
 </style>
 </head>
 <body>
 <div class="app-container">
-  <div class="header-card">
-    <h1>⚙️ 競馬AI管理コンソール</h1>
-    <p>localhost専用 - 管理者専用サイト</p>
+  <div class="title-bar">
+    <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+    <h1>競馬AI管理コンソール - 管理者専用</h1>
   </div>
 
   <div class="status-bar">
     <span>✅ 127.0.0.1:8765 稼働中 🟢</span>
+    <span id="status-detail" style="font-size:11px;color:#8e8e93;font-weight:400;">Macローカル専用</span>
   </div>
 
   <div class="card">
     <h2>📋 メイン操作</h2>
-    <div class="btn-row">
-      <button class="btn btn-main" onclick="apiCall('git-push')">GitHub公開反映 (Push)</button>
-      <button class="btn btn-file" onclick="downloadBackup()">ZIPバックアップ作成</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-main" onclick="alert('設定編集はサーバー側ファイルを直接編集してください')">システム設定編集</button>
-      <button class="btn btn-main" onclick="apiCall('restore')">学習データ管理</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-main" onclick="loadLogs()">ログ表示</button>
+    <div class="btn-col">
+      <button class="btn" onclick="apiCall('git-push')">GitHub公開反映 (Push)</button>
+      <button class="btn" onclick="downloadBackup()">ZIPバックアップ作成</button>
+      <button class="btn" onclick="alert('設定編集はサーバー側ファイル（.env等）を直接編集してください')">システム設定編集</button>
+      <button class="btn" onclick="restoreUI()">学習データ管理</button>
+      <button class="btn" onclick="loadLogs()">ログ表示</button>
     </div>
     <div class="result" id="result-main"></div>
   </div>
 
   <div class="card">
     <h2>⚠️ 危険操作</h2>
-    <div class="warning">この操作は元に戻せません。バックアップを推奨します。</div>
-    <div class="btn-row">
-      <button class="btn btn-danger" onclick="apiCall('cleanup')">公開データ削除</button>
-      <button class="btn btn-danger" onclick="apiCall('reset')">システム根本リセット</button>
+    <p style="font-size:12px;color:#ff9f0a;margin-bottom:10px;">この操作は元に戻せません。事前にバックアップを推奨します。</p>
+    <div class="btn-col">
+      <button class="btn btn-danger" onclick="apiCall('cleanup')">⚠️ 公開データ削除</button>
+      <button class="btn btn-danger" onclick="apiCall('reset')">🚫 システム根本リセット</button>
     </div>
     <div class="result" id="result-danger"></div>
   </div>
 
   <div class="card">
+    <h2>📊 サーバー状態</h2>
+    <div class="file-list" id="file-list">読み込み中...</div>
     <h2>📜 実行ログ</h2>
     <div class="log-box" id="log-box">ログを読み込み中...</div>
   </div>
 </div>
 <script>
+function showResult(id, ok, obj) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'block';
+  el.className = 'result ' + (ok ? 'success' : 'error');
+  el.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
+}
 function apiCall(endpoint) {
-  const resultDiv = document.getElementById('result-' + endpoint);
-  resultDiv.style.display = 'block';
-  resultDiv.className = 'result';
-  resultDiv.textContent = '処理中...';
+  const isDanger = (endpoint === 'cleanup' || endpoint === 'reset');
+  const target = isDanger ? 'result-danger' : 'result-main';
+  showResult(target, true, '処理中...');
   fetch('/api/' + endpoint, { method: 'POST' })
     .then(r => r.json())
-    .then(data => {
-      resultDiv.className = data.success ? 'result success' : 'result error';
-      resultDiv.textContent = JSON.stringify(data, null, 2);
-    })
-    .catch(err => {
-      resultDiv.className = 'result error';
-      resultDiv.textContent = 'エラー: ' + err;
-    });
+    .then(data => showResult(target, !!data.success, data))
+    .catch(err => showResult(target, false, 'エラー: ' + err));
+}
+function restoreUI() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function() {
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+    showResult('result-main', true, 'アップロード中...');
+    fetch('/api/restore', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => showResult('result-main', !!data.success, data))
+      .catch(err => showResult('result-main', false, 'エラー: ' + err));
+  };
+  input.click();
 }
 function downloadBackup() {
+  showResult('result-main', true, 'バックアップ作成中...');
   fetch('/api/backup', { method: 'POST' })
     .then(r => r.blob())
     .then(blob => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'keiba_backup_' + new Date().toISOString().slice(0, 16) + '.json';
+      a.download = 'keiba_backup_' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '') + '.json';
       document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url);
-    });
+      showResult('result-main', true, 'バックアップをダウンロードしました');
+    })
+    .catch(err => showResult('result-main', false, 'エラー: ' + err));
 }
 function loadLogs() {
   fetch('/api/logs')
     .then(r => r.json())
     .then(data => {
-      document.getElementById('log-box').textContent = data.logs.join('');
+      document.getElementById('log-box').textContent = (data.logs || []).join('');
     })
     .catch(err => { document.getElementById('log-box').textContent = 'エラー: ' + err; });
 }
+function loadStatus() {
+  fetch('/api/status')
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('file-list');
+      const files = data.data_files || [];
+      const commits = data.recent_commits || [];
+      let html = '<div>📁 data/ ファイル数: ' + files.length + '</div>';
+      files.forEach(f => { html += '<div>・' + f.name + ' (' + f.size + ' bytes)</div>'; });
+      html += '<div style="margin-top:6px;">📝 直近コミット:</div>';
+      commits.forEach(c => { html += '<div>・' + c + '</div>'; });
+      el.innerHTML = html;
+      document.getElementById('status-detail').textContent = 'data/' + files.length + '件';
+    })
+    .catch(() => {});
+}
 loadLogs();
+loadStatus();
 setInterval(loadLogs, 5000);
+setInterval(loadStatus, 15000);
 </script>
 </body>
 </html>
