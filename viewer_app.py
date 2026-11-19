@@ -7,14 +7,12 @@ import webbrowser
 import threading
 import time
 import subprocess
-import sys
 import os
 
 VIEWER_URL = "https://mopfyui99201-ui.github.io/keiba-ai-system/"
 LOCK_FILE = os.path.expanduser("~/Desktop/.keiba_viewer.lock")
 
 def _already_running():
-    """ロックファイル存在で多重起動を防ぐ"""
     return os.path.exists(LOCK_FILE)
 
 def open_browser():
@@ -26,8 +24,8 @@ def open_browser():
             f.write(str(os.getpid()))
         time.sleep(1.5)
         chrome_paths = [
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
             "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         ]
         for path in chrome_paths:
             if os.path.exists(path):

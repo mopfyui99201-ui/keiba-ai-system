@@ -17,16 +17,13 @@ ADMIN_PORT = 8765
 LOCK_FILE = os.path.expanduser("~/Desktop/.keiba_admin.lock")
 
 def _is_port_in_use(port):
-    """ポートが使用中かチェック"""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 def _already_running():
-    """ロックファイル存在で多重起動を防ぐ"""
     return os.path.exists(LOCK_FILE)
 
 def _open_browser_once(url):
-    """ブラウザを専用ウィンドウモードで1回だけ開く"""
     chrome_paths = [
         "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -36,6 +33,7 @@ def _open_browser_once(url):
             subprocess.Popen([path, f"--app={url}"])
             return
     webbrowser.open(url, new=2)
+
 def start_server():
     if _is_port_in_use(ADMIN_PORT):
         print(f"ポート {ADMIN_PORT} は既に使用中です。サーバー起動をスキップします。")

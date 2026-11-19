@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-admin_server.py - 競馬AI管理者専用ローカルサーバー
-127.0.0.1 (localhost) 専用。外部からはアクセス不可。
-GitHub Pages連携、データ管理、システムリセット、ログ確認機能を提供。
+admin_server.py - 競馬AI管理者専用ローカルサーバー（ポート8765）
+127.0.0.1 専用。GitHub Pagesには公開しない。
 """
 import os
 import sys
@@ -10,9 +9,8 @@ import json
 import subprocess
 import shutil
 import zipfile
-import glob
 from datetime import datetime
-from flask import Flask, render_template_string, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(PROJECT_ROOT)
@@ -24,16 +22,21 @@ DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 LOG_FILE = os.path.join(PROJECT_ROOT, "admin.log")
 
 def log(msg):
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[{datetime.now().strftime('%Y/%m/%d %H:%M:%S')}] {msg}\n")
-    print(msg)
+    ts = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    line = f"[{ts}] {msg}"
+    print(line)
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30, cwd=PROJECT_ROOT)
-        return result.returncode, result.stdout, result.stderr
+        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30, cwd=PROJECT_ROOT)
+        return r.returncode, r.stdout, r.stderr
     except subprocess.TimeoutExpired:
-        return -1, "", "コマンドタイムアウト"
+        return -1, "", "タイムアウト"
 @app.route("/")
 def index():
     html_path = os.path.join(PROJECT_ROOT, "admin.html")
@@ -48,7 +51,8 @@ def status():
     if os.path.exists(DATA_DIR):
         for f in os.listdir(DATA_DIR):
             fp = os.path.join(DATA_DIR, f)
-            files.append({"name": f, "size": os.path.getsize(fp)})
+            if os.path.isfile(fp):
+                files.append({"name": f, "size": os.path.getsize(fp)})
     ret, out, _ = run_cmd("git log --oneline -3")
     return jsonify({"data_files": files, "recent_commits": out.strip().splitlines()})
 
@@ -67,10 +71,10 @@ def cleanup():
         for f in os.listdir(DATA_DIR):
             fp = os.path.join(DATA_DIR, f)
             if os.path.isfile(fp):
-                os.remove(fp)
-                deleted.append(f)
+                os.remove(fp); deleted.append(f)
     log(f"削除ファイル: {deleted}")
     return jsonify({"success": True, "deleted": deleted})
+
 @app.route("/api/reset", methods=["POST"])
 def reset():
     log("システム根本リセット要求")
@@ -87,7 +91,6 @@ def reset():
         log(f"自動バックアップ: {backup_file}")
     except Exception as e:
         log(f"バックアップ失敗: {e}")
-    # 予想履歴・学習データをクリア
     for f in ["predictions_history.json", "venue_weights.json", "ai_settings.json"]:
         fp = os.path.join(PROJECT_ROOT, f)
         if os.path.exists(fp):
@@ -135,22 +138,6 @@ def logs():
     with open(LOG_FILE, encoding="utf-8") as fh:
         lines = fh.readlines()
     return jsonify({"logs": lines[-50:]})
-
-@app.route("/api/save-setting", methods=["POST"])
-def save_setting():
-    data = request.get_json()
-    fname = data.get("filename")
-    content = data.get("content")
-    if not fname or content is None:
-        return jsonify({"success": False, "error": "filename と content が必要です"})
-    fp = os.path.join(PROJECT_ROOT, fname)
-    try:
-        with open(fp, "w", encoding="utf-8") as fh:
-            fh.write(content)
-        log(f"設定保存: {fname}")
-        return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
 
 if __name__ == "__main__":
     log("管理者サーバー起動: http://127.0.0.1:8765")
