@@ -69,6 +69,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
     </div>
     <div class="result" id="result-keiba"></div>
     <div id="keiba-cards" style="margin-top:10px;"></div>
+    <details style="margin-top:14px;border-top:1px solid #3e3e42;padding-top:10px;">
+      <summary style="font-size:12px;color:#8e8e93;cursor:pointer;">⚙️ ノイズフィルタ設定（NGワード・採用ワード）</summary>
+      <div style="margin-top:8px;font-size:11px;color:#8e8e93;">1行に1ワード。NGワードに一致する記事は自動で除外されます（重賞/G1等の強いシグナルがある記事は除く）。採用ワードが多い記事ほど上位に表示されます。</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:11px;font-weight:700;color:#ff9f0a;margin-bottom:4px;">🚫 除外NGワード</div>
+          <textarea id="filter-ng" rows="8" style="width:100%;background:#1e1e1e;color:#ccc;border:1px solid #3e3e42;border-radius:6px;padding:8px;font-size:11px;font-family:monospace;"></textarea>
+        </div>
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:11px;font-weight:700;color:#30d158;margin-bottom:4px;">⭐ 採用・優先ワード</div>
+          <textarea id="filter-ok" rows="8" style="width:100%;background:#1e1e1e;color:#ccc;border:1px solid #3e3e42;border-radius:6px;padding:8px;font-size:11px;font-family:monospace;"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" style="padding:6px 12px;font-size:11px;" onclick="loadFilterConfig()">🔄 設定を再読込</button>
+        <button class="btn" style="padding:6px 12px;font-size:11px;" onclick="saveFilterConfig()">💾 フィルタ設定を保存</button>
+        <span id="filter-status" style="font-size:11px;color:#30d158;"></span>
+      </div>
+      <div id="filter-info" style="font-size:11px;color:#8e8e93;margin-top:6px;"></div>
+    </details>
   </div>
 
   <div class="card">
@@ -242,6 +262,7 @@ function renderKeibaCards(d) {
     '<button class="btn" style="padding:6px 10px;font-size:11px;" onclick="selectAllNews(false)">選択解除</button>' +
     '<button class="btn" style="padding:6px 10px;font-size:11px;background:#b91c1c;" onclick="deleteSelectedNews()">🗑️ 選択した項目をまとめて削除（<span id="sel-count">0</span>件）</button>' +
     '<button class="btn" style="padding:6px 10px;font-size:11px;background:#991b1b;" onclick="clearAllNews()">🗑️ 収集データをすべて一括消去</button>' +
+    (d.filtered ? '<span style="font-size:11px;color:#8e8e93;">🚫 ノイズ自動除外: ' + d.filtered + '件</span>' : '') +
     '</div>';
   groups.forEach(([kind, label, items, color]) => {
     if (!items || !items.length) return;
@@ -368,12 +389,33 @@ function loadKeibaNews() {
     if (d.success) renderKeibaCards(d);
   }).catch(() => {});
 }
+function loadFilterConfig() {
+  fetch('/api/filter-config').then(r => r.json()).then(d => {
+    if (!d.success) return;
+    document.getElementById('filter-ng').value = (d.ng || []).join('\n');
+    document.getElementById('filter-ok').value = (d.ok || []).join('\n');
+    document.getElementById('filter-info').textContent = '現在: NG ' + (d.ng||[]).length + '語 / 採用 ' + (d.ok||[]).length + '語（カスタム設定がある場合はそちらが優先）';
+  }).catch(() => {});
+}
+function saveFilterConfig() {
+  const ng = document.getElementById('filter-ng').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const ok = document.getElementById('filter-ok').value.split('\n').map(s => s.trim()).filter(Boolean);
+  fetch('/api/filter-config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ng, ok})})
+    .then(r => r.json()).then(d => {
+      if (d.success) {
+        document.getElementById('filter-status').textContent = '✅ 保存しました';
+        setTimeout(() => document.getElementById('filter-status').textContent = '', 3000);
+        loadKeibaNews();
+      } else alert('保存失敗: ' + (d.error || ''));
+    }).catch(err => alert('エラー: ' + err));
+}
 
 loadLogs();
 loadStatus();
 loadWebStatus();
 loadStats();
 loadKeibaNews();
+loadFilterConfig();
 setInterval(loadLogs, 5000);
 setInterval(loadStatus, 15000);
 setInterval(loadStats, 30000);

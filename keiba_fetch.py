@@ -23,6 +23,48 @@ BANEI_URL = "https://www.keiba.go.jp/topics/"
 RESULT_KEYWORDS = ["結果", "払戻", "着順", "1着", "2着", "3着", "的中", "レース結果", "確定"]
 UPCOMING_KEYWORDS = ["今週", "開催", "重賞", "G1", "G2", "G3", "記念", "競馬開催", "開催情報", "開催日程", "予想", "出走"]
 
+# --- ノイズフィルタ（競馬予想に無関係な広報・イベント系記事を除外） ---
+DEFAULT_NG_WORDS = [
+    "ビール", "発売のお知らせ", "キャンペーン", "ファン投票", "トークショー", "ゲスト",
+    "入場券", "指定席", "レーシングプログラム", "グッズ", "プレゼント", "ＣＭ", "CM",
+    "テレビ放送", "ラジオ", "求人", "採用", "システムメンテナンス", "営業時間",
+    "ツアー", "記念品", "コラボ",
+]
+DEFAULT_OK_WORDS = [
+    "重賞", "G1", "G2", "G3", "Jpn1", "Jpn2", "Jpn3", "特別", "ステークス", "杯",
+    "賞", "出走馬", "枠順", "調教", "馬体", "騎手", "乗り替わり", "結果", "着順",
+    "払戻", "オッズ", "馬場", "取消", "除外", "ばんえい", "大賞典", "競走", "レース",
+]
+FILTER_CONFIG_PATH = None  # admin_server から設定される
+
+
+def _filter_config():
+    """data/filter_config.json を読み、NG/採用ワードを返す。"""
+    ng, ok = list(DEFAULT_NG_WORDS), list(DEFAULT_OK_WORDS)
+    try:
+        if FILTER_CONFIG_PATH:
+            with open(FILTER_CONFIG_PATH, encoding="utf-8") as f:
+                cfg = json.load(f)
+            if isinstance(cfg.get("ng"), list):
+                ng = [str(w) for w in cfg["ng"] if str(w).strip()]
+            if isinstance(cfg.get("ok"), list):
+                ok = [str(w) for w in cfg["ok"] if str(w).strip()]
+    except Exception:
+        pass
+    return ng, ok
+
+
+def noise_score(title):
+    """(is_noise, ok_score) を返す。NGワード一致かつ強い採用シグナルなし→ノイズ。"""
+    ng, ok_words = _filter_config()
+    t = title or ""
+    ng_hit = [w for w in ng if w in t]
+    ok_score = sum(1 for w in ok_words if w in t)
+    # 「イベント」「キャンペーン」等の汎用NGは、重賞/G1等の強シグナルがあれば採用
+    strong = any(w in t for w in ("重賞", "G1", "G2", "G3", "Jpn1", "Jpn2", "Jpn3", "ステークス", "大賞典", "競走"))
+    is_noise = bool(ng_hit) and not strong
+    return is_noise, ok_score
+
 
 def fetch_text(url):
     """URLを取得してテキストを返す。文字コードはヘッダ/メタから推定。"""
@@ -203,11 +245,24 @@ def collect_all():
 
 
 def summarize(data):
-    """収集結果を 直近レース予定 / 過去1週間の結果 / その他ニュース に分類。"""
-    now = datetime.now()
-    week_ago = now - timedelta(days=7)
+    """収集結果を 直近レース予定 / 過去1週間の結果 / その他ニュース に分類。
+    ノイズ記事（NGワード一致）は除外し、採用ワードスコア順に並べる。"""
     upcoming, results, news = [], [], []
+    filtered = 0
+    scored = []
     for it in data.get("items", []):
+        text = (it.get("title") or "") + " " + (it.get("note") or "")
+        is_noise, ok_score = noise_score(text)
+        if is_noise:
+            filtered += 1
+            continue
+        kind = it.get("kind", "news")
+        it["_score"] = ok_score
+        scored.append(it)
+    # 採用キーワードが多い記事を優先（スコア降順・同点は元順）
+    scored.sort(key=lambda x: -x.get("_score", 0))
+    for it in scored:
+        it.pop("_score", None)
         kind = it.get("kind", "news")
         if kind == "result":
             results.append(it)
@@ -215,7 +270,14 @@ def summarize(data):
             upcoming.append(it)
         else:
             news.append(it)
-    return {"upcoming": upcoming, "results": results, "news": news}
+    return {"upcoming": upcoming, "results": results, "news": news, "filtered": filtered}
+
+
+def filter_config():
+    """管理画面用：現在のNG/採用ワード設定を返す。"""
+    ng, ok = _filter_config()
+    return {"ng": ng, "ok": ok,
+            "ng_default": DEFAULT_NG_WORDS, "ok_default": DEFAULT_OK_WORDS}
 
 
 def to_ai_text(data):

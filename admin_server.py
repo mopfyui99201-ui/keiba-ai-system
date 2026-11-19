@@ -26,6 +26,7 @@ INDEX_FILE = os.path.join(PROJECT_ROOT, "index.html")
 INDEX_BAK = os.path.join(PROJECT_ROOT, "index.html.bak")
 LATEST_JSON = os.path.join(DATA_DIR, "latest_keiba.json")
 RAW_JSON = os.path.join(DATA_DIR, "keiba_latest.json")
+FILTER_JSON = os.path.join(DATA_DIR, "filter_config.json")
 PAGES_URL = "https://mopfyui99201-ui.github.io/keiba-ai-system/"
 COUNTER_BASE = "https://countapi.mileshilliard.com/api/v1"
 COUNTER_KEY_TOTAL = "keiba_elizabeth_viewer_total"
@@ -257,6 +258,7 @@ def keiba_update():
             "upcoming": s["upcoming"],
             "results": s["results"],
             "news": s["news"],
+            "filtered": s.get("filtered", 0),
             "errors": data["errors"],
         })
     except Exception as e:
@@ -277,6 +279,7 @@ def keiba_news():
             "upcoming": s["upcoming"],
             "results": s["results"],
             "news": s["news"],
+            "filtered": s.get("filtered", 0),
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e), "items": data.get("items", [])})
@@ -365,6 +368,41 @@ def keiba_clear():
     write_json(RAW_JSON, data)
     log(f"keiba-clear: kind={kind} {removed}件削除")
     return jsonify({"success": True, "removed": removed, "remaining": len(data["items"])})
+
+def _init_filter():
+    try:
+        import keiba_fetch
+        keiba_fetch.FILTER_CONFIG_PATH = FILTER_JSON
+    except Exception:
+        pass
+
+_init_filter()
+
+@app.route("/api/filter-config", methods=["GET", "POST"])
+def filter_config():
+    """ノイズフィルタ設定の取得・保存。ng/ok はワードのリスト。"""
+    try:
+        import keiba_fetch
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    if request.method == "GET":
+        cfg = keiba_fetch.filter_config()
+        cfg["success"] = True
+        return jsonify(cfg)
+    body = request.get_json(silent=True) or {}
+    cfg = {}
+    if "ng" in body:
+        cfg["ng"] = [str(w).strip() for w in (body.get("ng") or []) if str(w).strip()]
+    if "ok" in body:
+        cfg["ok"] = [str(w).strip() for w in (body.get("ok") or []) if str(w).strip()]
+    if not cfg:
+        return jsonify({"success": False, "error": "ng/ok が必要です"})
+    # 既存設定とマージ
+    cur = read_json(FILTER_JSON, {})
+    cur.update(cfg)
+    write_json(FILTER_JSON, cur)
+    log(f"filter-config 更新: ng={len(cur.get('ng', []))} ok={len(cur.get('ok', []))}")
+    return jsonify({"success": True, "config": keiba_fetch.filter_config()})
 
 @app.route("/api/keiba-ai-text")
 def keiba_ai_text():
