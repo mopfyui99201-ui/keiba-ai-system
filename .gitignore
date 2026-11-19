@@ -18,3 +18,7 @@ venv/
 
 # 管理サーバーログ
 admin.log
+
+# 公開切替バックアップ・収集中間データ
+index.html.bak
+data/keiba_latest.json

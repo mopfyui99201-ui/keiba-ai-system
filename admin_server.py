@@ -9,17 +9,49 @@ import json
 import subprocess
 import shutil
 import zipfile
+import urllib.request
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 os.chdir(PROJECT_ROOT)
+sys.path.insert(0, PROJECT_ROOT)
 
 app = Flask(__name__)
 
 DESKTOP = os.path.expanduser("~/Desktop")
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 LOG_FILE = os.path.join(PROJECT_ROOT, "admin.log")
+INDEX_FILE = os.path.join(PROJECT_ROOT, "index.html")
+INDEX_BAK = os.path.join(PROJECT_ROOT, "index.html.bak")
+LATEST_JSON = os.path.join(DATA_DIR, "latest_keiba.json")
+RAW_JSON = os.path.join(DATA_DIR, "keiba_latest.json")
+PAGES_URL = "https://mopfyui99201-ui.github.io/keiba-ai-system/"
+COUNTER_BASE = "https://countapi.mileshilliard.com/api/v1"
+COUNTER_KEY_TOTAL = "keiba_elizabeth_viewer_total"
+
+MAINTENANCE_HTML = """<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>競馬AI予想 - メンテナンス中</title>
+<meta http-equiv="refresh" content="60">
+<style>
+body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", sans-serif; background: #1e1e1e; color: #ccc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+.box { text-align: center; padding: 40px 24px; background: #2d2d30; border: 1px solid #3e3e42; border-radius: 12px; max-width: 420px; }
+h1 { font-size: 18px; color: #fff; margin-bottom: 12px; }
+p { font-size: 13px; color: #8e8e93; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="box">
+<h1>🏇 競馬AI予想</h1>
+<p>ただいまメンテナンス中です。<br>最新の競馬情報を反映するため一時的に公開を停止しています。<br><br>しばらくしてから再度アクセスしてください。</p>
+</div>
+</body>
+</html>
+"""
 
 def log(msg):
     ts = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
@@ -130,6 +162,163 @@ def restore():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+def git_publish(msg):
+    """変更をコミットしてGitHubへプッシュ（公開URLへ反映）。"""
+    ret, out, err = run_cmd(
+        'git add -A && git commit -m "' + msg + '" && git push origin main'
+    )
+    log(f"公開push: ret={ret} {err[:120]}")
+    return ret == 0, out + err
+
+def read_json(path, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+def write_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def counter_get(key):
+    """無料カウンターAPIから値を取得（失敗時0）。"""
+    try:
+        url = f"{COUNTER_BASE}/get/{key}"
+        req = urllib.request.Request(url, headers={"User-Agent": "keiba-admin/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as res:
+            return int(json.loads(res.read().decode("utf-8")).get("value", 0))
+    except Exception:
+        return 0
+
+def is_maintenance():
+    try:
+        with open(INDEX_FILE, encoding="utf-8") as f:
+            return "メンテナンス中です" in f.read(3000)
+    except Exception:
+        return False
+
+# ---------- Web公開/停止 ----------
+@app.route("/api/web-status")
+def web_status():
+    return jsonify({
+        "published": not is_maintenance(),
+        "url": PAGES_URL,
+        "has_backup": os.path.exists(INDEX_BAK),
+    })
+
+@app.route("/api/web-unpublish", methods=["POST"])
+def web_unpublish():
+    log("Web公開停止（メンテナンス化）要求")
+    if not is_maintenance():
+        try:
+            shutil.copy2(INDEX_FILE, INDEX_BAK)
+        except Exception as e:
+            return jsonify({"success": False, "error": "バックアップ失敗: " + str(e)})
+    with open(INDEX_FILE, "w", encoding="utf-8") as f:
+        f.write(MAINTENANCE_HTML)
+    ok, out = git_publish("⛔ [admin] 閲覧サイトをメンテナンスモードへ切替")
+    return jsonify({"success": ok, "output": out, "url": PAGES_URL})
+
+@app.route("/api/web-publish", methods=["POST"])
+def web_publish():
+    log("Web公開（復元）要求")
+    if is_maintenance():
+        if not os.path.exists(INDEX_BAK):
+            return jsonify({"success": False, "error": "復元用バックアップ(index.html.bak)がありません"})
+        shutil.copy2(INDEX_BAK, INDEX_FILE)
+    ok, out = git_publish("🌐 [admin] 閲覧サイトを公開モードへ復帰")
+    return jsonify({"success": ok, "output": out, "url": PAGES_URL})
+
+# ---------- アクセスカウンター ----------
+@app.route("/api/stats")
+def stats():
+    today_key = "keiba_elizabeth_viewer_" + datetime.now().strftime("%Y%m%d")
+    return jsonify({
+        "total": counter_get(COUNTER_KEY_TOTAL),
+        "today": counter_get(today_key),
+    })
+
+# ---------- 競馬情報収集・同期 ----------
+@app.route("/api/keiba-update", methods=["POST"])
+def keiba_update():
+    log("競馬情報 更新要求")
+    try:
+        import keiba_fetch
+        data = keiba_fetch.collect_all()
+        write_json(RAW_JSON, data)
+        s = keiba_fetch.summarize(data)
+        return jsonify({
+            "success": True,
+            "fetched_at": data["fetched_at"],
+            "total": len(data["items"]),
+            "upcoming": s["upcoming"],
+            "results": s["results"],
+            "news": s["news"],
+            "errors": data["errors"],
+        })
+    except Exception as e:
+        log("keiba-update 失敗: " + str(e))
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route("/api/keiba-news")
+def keiba_news():
+    data = read_json(RAW_JSON, None)
+    if not data:
+        return jsonify({"success": False, "error": "未取得", "items": []})
+    try:
+        import keiba_fetch
+        s = keiba_fetch.summarize(data)
+        return jsonify({
+            "success": True,
+            "fetched_at": data.get("fetched_at"),
+            "upcoming": s["upcoming"],
+            "results": s["results"],
+            "news": s["news"],
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "items": data.get("items", [])})
+
+@app.route("/api/keiba-ai-text")
+def keiba_ai_text():
+    data = read_json(RAW_JSON, None)
+    if not data:
+        return jsonify({"success": False, "error": "未取得"})
+    try:
+        import keiba_fetch
+        return jsonify({"success": True, "text": keiba_fetch.to_ai_text(data)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route("/api/sync-viewer", methods=["POST"])
+def sync_viewer():
+    """収集データを閲覧サイト用JSONへ反映し、そのまま公開push。"""
+    log("閲覧サイトへの最新情報反映要求")
+    data = read_json(RAW_JSON, None)
+    if not data:
+        return jsonify({"success": False, "error": "先に「競馬情報を最新に更新」を実行してください"})
+    payload = {
+        "fetched_at": data.get("fetched_at"),
+        "synced_at": datetime.now().isoformat(timespec="seconds"),
+        "upcoming": data.get("items", [])[:0],
+    }
+    try:
+        import keiba_fetch
+        s = keiba_fetch.summarize(data)
+        payload["upcoming"] = s["upcoming"][:15]
+        payload["results"] = s["results"][:15]
+        payload["news"] = s["news"][:10]
+        payload["ai_text"] = keiba_fetch.to_ai_text(data)
+    except Exception:
+        payload["upcoming"] = data.get("items", [])[:15]
+        payload["results"] = []
+        payload["news"] = []
+        payload["ai_text"] = ""
+    write_json(LATEST_JSON, payload)
+    ok, out = git_publish("📤 [admin] 閲覧サイトへ最新競馬情報を反映")
+    return jsonify({"success": ok, "output": out, "count": len(payload.get("upcoming", [])) + len(payload.get("results", []))})
 
 @app.route("/api/logs")
 def logs():

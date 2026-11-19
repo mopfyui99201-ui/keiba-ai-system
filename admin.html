@@ -41,7 +41,34 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro
 
   <div class="status-bar">
     <span>✅ 127.0.0.1:8765 稼働中 🟢</span>
-    <span id="status-detail" style="font-size:11px;color:#8e8e93;font-weight:400;">Macローカル専用</span>
+    <span id="view-stats" style="font-size:11px;color:#8e8e93;font-weight:400;">👀 閲覧数：取得中…</span>
+    <span id="status-detail" style="font-size:11px;color:#8e8e93;font-weight:400;">data/ -</span>
+  </div>
+
+  <div class="card">
+    <h2>🌐 Web公開ステータス</h2>
+    <div id="web-status-text" style="font-size:13px;margin-bottom:10px;color:#cccccc;">確認中...</div>
+    <div class="btn-col">
+      <button class="btn" id="btn-publish" onclick="webAction('web-publish')">🌐 公開する（最新index.htmlを反映）</button>
+      <button class="btn" id="btn-unpublish" onclick="webAction('web-unpublish')">⛔ 停止する（メンテナンス画面にする）</button>
+    </div>
+    <div style="margin-top:10px;font-size:12px;">
+      <div style="color:#8e8e93;margin-bottom:4px;">公開URL：</div>
+      <a id="pages-link" href="#" target="_blank" rel="noopener" style="color:#64d2ff;word-break:break-all;">https://mopfyui99201-ui.github.io/keiba-ai-system/</a>
+      <button class="btn" style="margin-top:6px;padding:6px 10px;font-size:11px;" onclick="copyPagesUrl()">📋 URLをコピー</button>
+    </div>
+    <div class="result" id="result-web"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔄 競馬情報・自動収集</h2>
+    <div class="btn-col">
+      <button class="btn" onclick="keibaUpdate()">🔄 競馬情報を最新に更新（外部情報収集）</button>
+      <button class="btn" onclick="syncViewer()">📤 閲覧者サイトへ最新情報を反映（公開更新）</button>
+      <button class="btn" onclick="copyAllAiText()">📋 全体のAI学習用テキストをコピー</button>
+    </div>
+    <div class="result" id="result-keiba"></div>
+    <div id="keiba-cards" style="margin-top:10px;"></div>
   </div>
 
   <div class="card">
@@ -144,10 +171,131 @@ function loadStatus() {
     })
     .catch(() => {});
 }
+/* ---- Web公開切替 ---- */
+function loadWebStatus() {
+  fetch('/api/web-status').then(r => r.json()).then(d => {
+    document.getElementById('web-status-text').innerHTML = d.published
+      ? '🟢 <b style="color:#30d158;">公開中</b> — GitHub Pagesに最新index.htmlが反映されています'
+      : '🔴 <b style="color:#ff9f0a;">停止中（メンテナンス画面）</b> — 外部からは閲覧できません';
+    document.getElementById('pages-link').href = d.url;
+    document.getElementById('btn-publish').disabled = !!d.published;
+    document.getElementById('btn-unpublish').disabled = !d.published;
+    document.getElementById('btn-publish').style.opacity = d.published ? '0.4' : '1';
+    document.getElementById('btn-unpublish').style.opacity = d.published ? '1' : '0.4';
+  }).catch(() => {});
+}
+function webAction(endpoint) {
+  const msg = endpoint === 'web-unpublish'
+    ? '本当にメンテナンスモードにしますか？（公開URLがメンテナンス画面に変わります）'
+    : '本当に公開モードに戻しますか？';
+  if (!confirm(msg)) return;
+  showResult('result-web', true, '処理中... git push を実行しています');
+  fetch('/api/' + endpoint, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      showResult('result-web', !!data.success, data.success ? '完了しました。公開URLに数分で反映されます: ' + data.url : data);
+      loadWebStatus();
+    })
+    .catch(err => showResult('result-web', false, 'エラー: ' + err));
+}
+function copyPagesUrl() {
+  const url = document.getElementById('pages-link').href;
+  navigator.clipboard.writeText(url).then(() => alert('コピーしました: ' + url)).catch(() => prompt('URLをコピー:', url));
+}
+
+/* ---- アクセスカウンター ---- */
+function loadStats() {
+  fetch('/api/stats').then(r => r.json()).then(d => {
+    document.getElementById('view-stats').textContent = '👀 閲覧数：累計 ' + (d.total || 0) + '回（本日 ' + (d.today || 0) + '回）';
+  }).catch(() => {});
+}
+
+/* ---- 競馬情報収集・同期 ---- */
+let lastKeibaData = null;
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function aiTextForItem(it) {
+  return '【AI学習】' + it.title + '（' + it.source + '）' + (it.date ? ' ' + it.date : '') + '\n' + it.url;
+}
+function copyText(text, label) {
+  const done = () => alert('コピーしました');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallback());
+  } else fallback();
+  function fallback() {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+  }
+}
+function renderKeibaCards(d) {
+  const box = document.getElementById('keiba-cards');
+  if (!d || (!d.upcoming && !d.results && !d.news)) { box.innerHTML = ''; return; }
+  lastKeibaData = d;
+  let html = '';
+  const groups = [
+    ['🏇 直近の注目レース予定・ニュース', d.upcoming, '#30d158'],
+    ['🏁 過去1週間の主なレース結果', d.results, '#ff9f0a'],
+    ['📰 その他の最新ニュース', d.news, '#0a84ff'],
+  ];
+  groups.forEach(([label, items, color]) => {
+    if (!items || !items.length) return;
+    html += '<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:' + color + ';margin-bottom:6px;">' + label + '</div>';
+    items.slice(0, 12).forEach((it, i) => {
+      html += '<div class="news-item" style="background:#252526;border:1px solid #3e3e42;border-radius:6px;padding:8px;margin-bottom:6px;">' +
+        '<div style="font-size:12px;color:#fff;margin-bottom:4px;">' + escH(it.title) + '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+        '<a href="' + escH(it.url) + '" target="_blank" rel="noopener" style="font-size:11px;color:#64d2ff;">情報元：' + escH(it.source) + '</a>' +
+        (it.date ? '<span style="font-size:10px;color:#8e8e93;">' + escH(it.date) + '</span>' : '') +
+        '<button class="btn" style="padding:4px 8px;font-size:10px;margin-left:auto;">📋 AI学習用コピー</button>' +
+        '</div></div>';
+    });
+    html += '</div>';
+  });
+  box.innerHTML = html;
+  const btns = box.querySelectorAll('.btn');
+  let flat = [];
+  groups.forEach(([, items]) => { (items || []).slice(0, 12).forEach(it => flat.push(it)); });
+  btns.forEach((b, i) => { b.onclick = () => copyText(aiTextForItem(flat[i]), 'AI学習用'); });
+}
+function keibaUpdate() {
+  showResult('result-keiba', true, '外部サイトから情報収集中...（数秒かかります）');
+  fetch('/api/keiba-update', { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) { showResult('result-keiba', false, data); return; }
+      showResult('result-keiba', true, '取得完了: ' + data.fetched_at + ' / ' + data.total + '件（直近' + (data.upcoming||[]).length + '・結果' + (data.results||[]).length + '・他' + (data.news||[]).length + '）' + (data.errors && data.errors.length ? '\n一部失敗: ' + data.errors.join(' / ') : ''));
+      renderKeibaCards(data);
+    })
+    .catch(err => showResult('result-keiba', false, 'エラー: ' + err));
+}
+function syncViewer() {
+  if (!confirm('収集済みの最新情報を閲覧サイトへ反映し、GitHubへ公開pushします。よろしいですか？')) return;
+  showResult('result-keiba', true, '公開push実行中...');
+  fetch('/api/sync-viewer', { method: 'POST' })
+    .then(r => r.json())
+    .then(data => showResult('result-keiba', !!data.success, data.success ? '反映・公開push完了。数分後に公開URLへ表示されます' : data))
+    .catch(err => showResult('result-keiba', false, 'エラー: ' + err));
+}
+function copyAllAiText() {
+  fetch('/api/keiba-ai-text').then(r => r.json()).then(d => {
+    if (d.success) copyText(d.text, '全体');
+    else alert(d.error || 'AIテキスト未取得');
+  }).catch(() => alert('取得失敗'));
+}
+function loadKeibaNews() {
+  fetch('/api/keiba-news').then(r => r.json()).then(d => {
+    if (d.success) renderKeibaCards(d);
+  }).catch(() => {});
+}
+
 loadLogs();
 loadStatus();
+loadWebStatus();
+loadStats();
+loadKeibaNews();
 setInterval(loadLogs, 5000);
 setInterval(loadStatus, 15000);
+setInterval(loadStats, 30000);
+setInterval(loadKeibaNews, 60000);
 </script>
 </body>
 </html>
