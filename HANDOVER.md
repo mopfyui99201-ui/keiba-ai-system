@@ -285,3 +285,13 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
 ## 専用Cloudflare Workerプロキシを最優先化
 - `app.js`：外部取得の第1候補に専用Worker `https://sparkling-firefly-4550.mopfyui99201.workers.dev?url=` を追加（netkeiba RSS・GoogleニュースRSS両方）。失敗時のみ rss2json→codetabs の従来プロキシへフォールバック。Workerは対象URLをそのままfetchして返すためRSS XMLをparseRssXmlItemsで解析
 - 検証: curlでWorker経由のnetkeiba/GoogleニュースRSS取得成功（XML返却確認）、node --check OK、bust_viewer_cacheで?v=更新済み
+
+## 起動時オートフェッチ＆自動答え合わせ
+- `index.html`：アプリバー直下に「🤖 自動収集：ON/OFF（最終更新）」バッジを追加（タップでON/OFF切替）
+- `app.js`
+  - `autoFetch(force)`：前回取得から30分超で裏側自動実行。専用Workerプロキシ→rss2jsonの順で netkeiba RSS＋Googleニュース4クエリを取得し、NGフィルタ・タイトル重複除去後 localStorage の learnings/station_items へ自動登録（重複スキップ表示付き）→ グラフ・クイック選択を即更新
+  - `runPredict()`：予想実行時に `keiba_pending_preds` へ答え合わせ待ちとして自動登録（レース名重複は最新で上書き、最大30件）
+  - `recordReflection()`：手動/自動共通の照合・的中判定・反省レッスン・収支保存ロジックに分離
+  - `autoCheckPending()`：`loadLatest` 完了時と autoFetch 後に、保留予想（7日以内）と同期結果の detail.entries を自動照合。一致すれば的中判定・反省学習・収支を自動記録（auto:true）。一致しないマイナー結果は従来通り手動フォームに残る
+  - `toggleAutoFetch()`/`renderAutoBadge()`：設定は localStorage `keiba_autofetch` に永続化
+- 検証: node --check OK。スタブで 予想→pending登録→同期結果detail照合→自動reflection(auto:true)・pending解消、autoFetch→NG除外・nar分類・学習保存を確認

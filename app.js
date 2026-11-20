@@ -55,6 +55,8 @@ let selectedRaceName = '';
 let editingLearnIndex = -1;
 let reflections = [];
 let stationItems = [];
+let pendingPreds = [];
+let autoFetchOn = true;
 let condTrack = '良';
 let condDist = '';
 const pct = v => Math.min(100, Math.max(0, Math.round(v)));
@@ -261,6 +263,7 @@ function loadLatest() {
     latestData = data;
     if (!data || (!data.upcoming && !data.results && !data.news)) return;
     populateRaceSelect();
+    autoCheckPending();
     const synced = (data.synced_at || data.fetched_at || '').replace('T', ' ').slice(0, 16);
     // ジャンル別に各タブの最新情報カードへ振り分け
     const CARDS = {
@@ -687,6 +690,11 @@ function runPredict() {
     sanrenpuku: [top[0].umaban, top[1].umaban, top[2].umaban],
     sanrentan: [top[0].umaban, top[1].umaban, top[2].umaban],
   };
+  // 答え合わせ待ちとして保留登録（自動照合用）
+  pendingPreds = pendingPreds.filter(pp => pp.raceName !== raceName);
+  pendingPreds.push({raceName, venue: windowLastPred.venue, top: windowLastPred.top, budget, date: new Date().toISOString(), tickets: windowLastTickets});
+  if (pendingPreds.length > 30) pendingPreds = pendingPreds.slice(-30);
+  saveJSON('keiba_pending_preds', pendingPreds);
 }
 
 /* ---------- 買い目コピー・結果記録 ---------- */
@@ -847,16 +855,10 @@ function answerCheck() {
     alert('自動取得できませんでした。実際の1着〜3着の馬番と払戻金額を入力してください');
   }
 }
-function saveAnswerCheck() {
-  const a1 = parseInt(document.getElementById('in-1st').value, 10);
-  const a2 = parseInt(document.getElementById('in-2nd').value, 10);
-  const a3 = parseInt(document.getElementById('in-3rd').value, 10);
-  const payout = parseInt((document.getElementById('in-payout').value || '0').replace(/[^\d]/g, ''), 10) || 0;
-  if (!(a1 > 0 && a2 > 0 && a3 > 0)) { alert('1着〜3着の馬番を入力してください'); return; }
-  const pred = windowLastPred;
-  if (!pred) { alert('先にAI予想を実行してください'); return; }
+/* 予想と実着順を照合して反省学習レコードを保存（手動/自動共通） */
+function recordReflection(pred, a1, a2, a3, payout, auto) {
   const invested = pred.budget || 3000;
-  const p = pred.top;
+  const p = pred.top || pred.predTop3 || [];
   const hits = {
     umaren:    (a1 === p[0] && a2 === p[1]) || (a1 === p[1] && a2 === p[0]),
     umatan:    a1 === p[0] && a2 === p[1],
@@ -865,7 +867,6 @@ function saveAnswerCheck() {
   };
   const anyHit = Object.values(hits).some(Boolean);
   const profit = payout - invested;
-  // 反省レッスン自動生成
   const lessons = [];
   if (a1 !== p[0]) lessons.push('本命馬(' + p[0] + '番)が1着にならず→人気馬過剰評価の補正が必要');
   if (![a1,a2,a3].some(n => p.includes(n))) lessons.push('3着内に予想馬なし→穴馬・差し馬の重み付けを強化');
@@ -873,28 +874,41 @@ function saveAnswerCheck() {
   if (anyHit) lessons.push('的中あり→この予想パターンを継続学習');
   if (!lessons.length) lessons.push('僅差の結果→微調整レベル');
   const lesson = lessons.join('／');
+  const raceName = pred.raceName || pred.race || '';
   const rec = {
-    id: Date.now(), date: new Date().toISOString(),
-    race: pred.raceName, venue: pred.venue || venueOfRace(pred.raceName),
+    id: Date.now(), date: new Date().toISOString(), auto: !!auto,
+    race: raceName, venue: pred.venue || venueOfRace(raceName),
     predTop3: p, actualTop3: [a1,a2,a3], invested, payout, profit,
     hits, anyHit, lesson,
   };
   reflections.push(rec);
   saveJSON('keiba_reflections', reflections);
-  // 学習データとしても登録（同場・同条件の予想に反映）
   const cat = categoryOfVenue(rec.venue) || 'jra';
   learnings.push({
     id: Date.now() + 1, category: cat, categoryLabel: LEARN_CATEGORIES[cat] ? LEARN_CATEGORIES[cat].label : cat,
     venue: rec.venue || '（指定なし）', race: rec.race,
-    text: '【答え合わせ ' + new Date().toLocaleDateString('ja-JP') + '】実際 ' + a1 + '→' + a2 + '→' + a3 + '着 / ' + lesson + (payout ? ' / 払戻' + payout + '円' : ''),
+    text: '【答え合わせ ' + (auto ? '自動' : '') + new Date().toLocaleDateString('ja-JP') + '】実際 ' + a1 + '→' + a2 + '→' + a3 + '着 / ' + lesson + (payout ? ' / 払戻' + payout + '円' : ''),
     date: new Date().toISOString(),
   });
   saveJSON('keiba_learnings', learnings);
-  predictionsHistory.push({date: new Date().toISOString(), '1st': String(a1), '2nd': String(a2), '3rd': String(a3), tickets: windowLastTickets, payout});
+  predictionsHistory.push({date: new Date().toISOString(), '1st': String(a1), '2nd': String(a2), '3rd': String(a3), tickets: pred.tickets || windowLastTickets, payout, auto: !!auto});
   saveJSON('keiba_predictions', predictionsHistory);
   renderLearnList(); renderHistory(); renderLearningGraph();
   const hitTxt = [hits.umaren && '馬連', hits.umatan && '馬単', hits.sanrenpuku && '3連複', hits.sanrentan && '3連単'].filter(Boolean).join('・') || '不的中';
-  alert((anyHit ? '🎉 的中！（' + hitTxt + '）' : '😢 不的中') + '\n収支: ' + (profit >= 0 ? '+' : '') + profit + '円\n💡 ' + lesson);
+  return {rec, hitTxt, profit, lesson};
+}
+function saveAnswerCheck() {
+  const a1 = parseInt(document.getElementById('in-1st').value, 10);
+  const a2 = parseInt(document.getElementById('in-2nd').value, 10);
+  const a3 = parseInt(document.getElementById('in-3rd').value, 10);
+  const payout = parseInt((document.getElementById('in-payout').value || '0').replace(/[^\d]/g, ''), 10) || 0;
+  if (!(a1 > 0 && a2 > 0 && a3 > 0)) { alert('1着〜3着の馬番を入力してください'); return; }
+  const pred = windowLastPred;
+  if (!pred) { alert('先にAI予想を実行してください'); return; }
+  const r = recordReflection(pred, a1, a2, a3, payout, false);
+  pendingPreds = pendingPreds.filter(pp => pp.raceName !== r.rec.race);
+  saveJSON('keiba_pending_preds', pendingPreds);
+  alert((r.rec.anyHit ? '🎉 的中！（' + r.hitTxt + '）' : '😢 不的中') + '\n収支: ' + (r.profit >= 0 ? '+' : '') + r.profit + '円\n💡 ' + r.lesson);
   ['in-1st','in-2nd','in-3rd','in-payout'].forEach(id => document.getElementById(id).value = '');
 }
 function pnlSummary() {
@@ -1266,6 +1280,124 @@ function importBackupFile(input) {
   input.value = '';
 }
 
+/* ---------- 自動収集（オートフェッチ）＆自動答え合わせ ---------- */
+const AUTOFETCH_INTERVAL = 30 * 60 * 1000; // 30分
+const DEDICATED_PROXY_URL = 'https://sparkling-firefly-4550.mopfyui99201.workers.dev?url=';
+function setAutoStatus(msg) {
+  const el = document.getElementById('autofetch-status');
+  if (el) el.textContent = msg;
+}
+function renderAutoBadge() {
+  const st = document.getElementById('autofetch-state');
+  if (st) { st.textContent = autoFetchOn ? 'ON' : 'OFF'; st.style.color = autoFetchOn ? '#30d158' : '#8e8e93'; }
+  const last = loadJSON('keiba_last_autofetch', 0);
+  setAutoStatus(last ? '最終更新: ' + new Date(last).toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'}) : '未取得');
+}
+function toggleAutoFetch() {
+  autoFetchOn = !autoFetchOn;
+  saveJSON('keiba_autofetch', autoFetchOn);
+  renderAutoBadge();
+  if (autoFetchOn) autoFetch(true);
+}
+async function fetchRssItemsViaWorker(url) {
+  // 第1候補: 専用Worker → 第2候補: rss2json
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    const res = await fetch(DEDICATED_PROXY_URL + encodeURIComponent(url), {signal: ctrl.signal});
+    clearTimeout(timer);
+    if (res.ok) {
+      const items = parseRssXmlItems(await res.text());
+      if (items.length) return items.slice(0, 15);
+    }
+  } catch (e) { /* フォールバックへ */ }
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url), {signal: ctrl.signal});
+    clearTimeout(timer);
+    if (res.ok) {
+      const j = await res.json();
+      if (j && j.status === 'ok' && Array.isArray(j.items)) {
+        return j.items.slice(0, 15).map(it => ({title: it.title || '', link: it.link || '', date: (it.pubDate || '').slice(0, 16)}));
+      }
+    }
+  } catch (e) { /* 失敗は許容 */ }
+  return [];
+}
+async function autoFetch(force) {
+  if (!autoFetchOn && !force) return;
+  const last = loadJSON('keiba_last_autofetch', 0);
+  if (!force && Date.now() - last < AUTOFETCH_INTERVAL) { renderAutoBadge(); return; }
+  setAutoStatus('🤖 自動収集中…');
+  const NG = ['ビール','キャンペーン','グッズ','プレゼント','求人','採用','コラボ','入場券','トークショー','テレビ','ラジオ'];
+  let items = [];
+  // netkeiba RSS ＋ Googleニュース検索（全ジャンル）
+  items.push(...await fetchRssItemsViaWorker('https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba'));
+  for (const q of ['競馬 重賞 結果', '地方競馬 結果', 'ばんえい競馬 結果', '競馬 レース 結果']) {
+    items.push(...await fetchRssItemsViaWorker('https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=ja&gl=JP&ceid=JP:ja'));
+  }
+  const seen = new Set();
+  const picked = [];
+  items.forEach(it => {
+    const t = it.title || '';
+    if (t.length < 5 || NG.some(w => t.includes(w)) || seen.has(t)) return;
+    seen.add(t); picked.push(it);
+  });
+  // 学習メモリへ自動登録（重複スキップ）
+  let added = 0, skipped = 0;
+  picked.slice(0, 20).forEach(it => {
+    const kind = classifyStationKind(it.title);
+    const cat = categoryOfVenue(venueOfRace(it.title)) || 'jra';
+    const ven = venueOfRace(it.title) || '（指定なし）';
+    const title = it.title.slice(0, 60);
+    if (learnings.some(l => l.race === title && l.category === cat)) { skipped++; return; }
+    learnings.push({
+      id: Date.now() + Math.floor(Math.random() * 100000), category: cat,
+      categoryLabel: LEARN_CATEGORIES[cat] ? LEARN_CATEGORIES[cat].label : cat,
+      venue: ven, race: title,
+      text: '【自動収集 ' + (kind === 'results' ? '結果' : 'ニュース') + '】' + it.title,
+      date: new Date().toISOString(), source: 'autofetch',
+    });
+    stationItems.push({id: Date.now(), title: it.title, url: it.link, date: it.date, kind, genre: cat, venue: ven});
+    added++;
+  });
+  saveJSON('keiba_learnings', learnings);
+  saveJSON('keiba_station_items', stationItems.slice(-200));
+  saveJSON('keiba_last_autofetch', Date.now());
+  renderAutoBadge();
+  setAutoStatus(added || skipped ? '✅ +' + added + '件学習（重複' + skipped + '件）' : '✅ 収集完了（新規なし）');
+  renderLearnList(); populateQuickSelect(); renderLearningGraph();
+  autoCheckPending();
+}
+/* 未確定の保留予想を同期結果データと自動照合 */
+function autoCheckPending() {
+  if (!pendingPreds.length || !latestData || !latestData.results) return;
+  const now = Date.now();
+  let resolved = 0;
+  const remain = [];
+  pendingPreds.forEach(pp => {
+    // 7日以上前の予想は対象外
+    if (now - new Date(pp.date || 0).getTime() > 7 * 86400000) { remain.push(pp); return; }
+    const words = (pp.raceName || '').split(/\s+/).filter(w => w.length >= 2);
+    const hit = (latestData.results || []).find(it => {
+      const t = it.title || '';
+      return it.detail && it.detail.entries && it.detail.entries.length >= 3 &&
+        words.some(w => t.includes(w));
+    });
+    if (!hit) { remain.push(pp); return; }
+    const e = hit.detail.entries;
+    const byRank = r => (e.find(x => x.rank === r) || {}).umaban;
+    const a1 = byRank(1), a2 = byRank(2), a3 = byRank(3);
+    if (!(a1 > 0 && a2 > 0 && a3 > 0)) { remain.push(pp); return; }
+    recordReflection({raceName: pp.raceName, venue: pp.venue, top: pp.top, budget: pp.budget, tickets: pp.tickets}, a1, a2, a3, 0, true);
+    resolved++;
+  });
+  pendingPreds = remain;
+  saveJSON('keiba_pending_preds', pendingPreds);
+  if (resolved) setAutoStatus('🏁 自動答え合わせ ' + resolved + '件完了');
+}
+
 /* ---------- カウンター ---------- */
 const COUNT_BASE = 'https://countapi.mileshilliard.com/api/v1';
 const COUNT_KEY_TOTAL = 'keiba_elizabeth_viewer_total';
@@ -1307,6 +1439,8 @@ predictionsHistory = loadJSON('keiba_predictions', []);
 learnings = loadJSON('keiba_learnings', []);
 reflections = loadJSON('keiba_reflections', []);
 stationItems = loadJSON('keiba_station_items', []);
+pendingPreds = loadJSON('keiba_pending_preds', []);
+autoFetchOn = loadJSON('keiba_autofetch', true);
 
 renderG1();
 buildVenues();
@@ -1321,3 +1455,5 @@ initVenueRaceSelects();
 initCounter();
 loadLatest();
 renderLearningGraph();
+renderAutoBadge();
+autoFetch(false);

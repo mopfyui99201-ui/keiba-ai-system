@@ -172,6 +172,10 @@ details.free-input summary { font-size: 12px; color: #64d2ff; cursor: pointer; p
   <div class="app-title">🏇 競馬AI予想</div>
   <div class="app-sub" id="app-sub"></div>
 </div>
+<div id="autofetch-bar" onclick="toggleAutoFetch()" style="display:flex;justify-content:space-between;align-items:center;background:#16181d;border:1px solid #2c2f36;border-radius:10px;padding:6px 12px;margin-bottom:10px;font-size:11px;color:#8e8e93;cursor:pointer;">
+  <span>🤖 自動収集：<b id="autofetch-state" style="color:#30d158;">ON</b>（タップで切替）</span>
+  <span id="autofetch-status">未取得</span>
+</div>
 
 <!-- ホーム画面（メニュー一覧） -->
 <div class="tab-panel active" id="panel-home">
@@ -592,6 +596,6 @@ Android（Chrome）：
     </div>
   </div>
 </div>
-<script src="app.js?v=202611201443"></script>
+<script src="app.js?v=202611201455"></script>
 </body>
 </html>
