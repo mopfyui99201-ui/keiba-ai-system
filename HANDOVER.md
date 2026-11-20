@@ -281,3 +281,7 @@ Clineが制限停止。直前の作業は「PyInstaller廃止・純正.appバン
 - `index.html`：ホーム画面右上に「📖 使い方マニュアル」ボタン。タップで全画面オーバーレイ（`manual-overlay`）が開き、①6メニューの見方（ツリー図）②AI予想の使い方（6ステップ）③学習記録・答え合わせ・AIレベルの仕組み ④PWAホーム画面追加方法（iPhone/Android別）を図解風テキストで表示。背景タップor✕で閉じる
 - `app.js`：`toggleManual()` 追加
 - 検証: node --check OK
+
+## 専用Cloudflare Workerプロキシを最優先化
+- `app.js`：外部取得の第1候補に専用Worker `https://sparkling-firefly-4550.mopfyui99201.workers.dev?url=` を追加（netkeiba RSS・GoogleニュースRSS両方）。失敗時のみ rss2json→codetabs の従来プロキシへフォールバック。Workerは対象URLをそのままfetchして返すためRSS XMLをparseRssXmlItemsで解析
+- 検証: curlでWorker経由のnetkeiba/GoogleニュースRSS取得成功（XML返却確認）、node --check OK、bust_viewer_cacheで?v=更新済み

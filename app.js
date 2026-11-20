@@ -422,7 +422,9 @@ function parseRssXmlItems(xml) {
 async function fetchExternalNews() {
   setExtStatus('取得中…');
   const feedUrl = 'https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba';
+  const DEDICATED_PROXY = 'https://sparkling-firefly-4550.mopfyui99201.workers.dev?url=';
   const sources = [
+    {type:'worker', url:DEDICATED_PROXY + encodeURIComponent(feedUrl)},
     {type:'json', url:'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl)},
     {type:'xml',  url:'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl)},
   ];
@@ -443,6 +445,7 @@ async function fetchExternalNews() {
           }));
         }
       } else {
+        // worker / codetabs はRSS XMLをそのまま返す
         items = parseRssXmlItems(await res.text());
       }
       if (items.length) break;
@@ -943,25 +946,27 @@ function stationQueries(target, range) {
 }
 async function fetchGoogleNewsItems(q) {
   const gUrl = 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) + '&hl=ja&gl=JP&ceid=JP:ja';
+  const DEDICATED_PROXY = 'https://sparkling-firefly-4550.mopfyui99201.workers.dev?url=';
   const proxies = [
-    'https://api.rss2json.com/v1/api.json?rss_url=',
-    'https://api.codetabs.com/v1/proxy?quest=',
+    {worker: true,  url: DEDICATED_PROXY + encodeURIComponent(gUrl)},
+    {worker: false, url: 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(gUrl)},
+    {worker: false, url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(gUrl)},
   ];
   for (const px of proxies) {
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10000);
-      const res = await fetch(px + encodeURIComponent(gUrl), {signal: ctrl.signal});
+      const res = await fetch(px.url, {signal: ctrl.signal});
       clearTimeout(timer);
       if (!res.ok) continue;
-      if (px.includes('rss2json')) {
+      if (px.worker || px.url.includes('codetabs')) {
+        const items = parseRssXmlItems(await res.text());
+        if (items.length) return items.slice(0, 10);
+      } else {
         const j = await res.json();
         if (j && j.status === 'ok' && Array.isArray(j.items)) {
           return j.items.slice(0, 10).map(it => ({title: it.title || '', link: it.link || '', date: (it.pubDate || '').slice(0, 16)}));
         }
-      } else {
-        const items = parseRssXmlItems(await res.text());
-        if (items.length) return items.slice(0, 10);
       }
     } catch (e) { /* 次のプロキシへ */ }
   }
@@ -1004,7 +1009,9 @@ async function fetchStationData() {
   const range = document.getElementById('station-range').value;
   setSt('取得中…');
   const feedUrl = 'https://rss.netkeiba.com/?pid=rss_netkeiba&site=netkeiba';
+  const DEDICATED_PROXY = 'https://sparkling-firefly-4550.mopfyui99201.workers.dev?url=';
   const sources = [
+    {type:'worker', url:DEDICATED_PROXY + encodeURIComponent(feedUrl)},
     {type:'json', url:'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl)},
     {type:'xml',  url:'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(feedUrl)},
   ];
