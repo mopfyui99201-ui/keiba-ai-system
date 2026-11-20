@@ -1,6 +1,6 @@
 {
-  "fetched_at": "2026-11-19T23:18:13",
-  "synced_at": "2026-11-19T23:18:32",
+  "fetched_at": "2026-11-20T14:58:34",
+  "synced_at": "2026-11-20T14:58:40",
   "upcoming": [
     {
       "title": "重賞・オープン特別競走（11月14日から15日）のレーティング",
@@ -9,14 +9,6 @@
       "date": "11月19日（木曜）",
       "kind": "upcoming",
       "genre": "jra"
-    },
-    {
-      "title": "エリザベス女王杯（GⅠ）　出走馬の「調教後の馬体重」",
-      "url": "https://www.jra.go.jp/news/202611/111203.html",
-      "source": "JRA",
-      "date": "11月12日（木曜）",
-      "kind": "upcoming",
-      "genre": "large_event"
     },
     {
       "title": "マイルチャンピオンシップ（GⅠ）　出走馬の「調教後の馬体重」",
@@ -35,10 +27,42 @@
       "genre": "jra"
     },
     {
+      "title": "【注目馬動向】「清き一票を」友道調教師がスティンガーグラスの有馬出走にGOサイン　昨年は特別登録も出走せず",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349363",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 11:29:00 +0900",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "【ジャパンC・1週前】メイショウタバル宝塚記念との比較で物足りなさも石橋調教師「意外性と騎手の豊に任せたい」",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349352",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 06:30:00 +0900",
+      "kind": "upcoming",
+      "genre": "large_event"
+    },
+    {
+      "title": "【岩田康誠の熱血!!競馬道】霜月Sのヤマニンアストロンは重賞でもやれそうな好素材　「内でタメが利けば、もう一段上の脚を繰り出せます」",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349350",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 06:00:00 +0900",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
       "title": "開催競馬場・今日の出来事（11月15日（日曜））",
       "url": "https://www.jra.go.jp/news/202611/111505.html",
       "source": "JRA",
       "date": "11月15日（日曜）",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "「雷神降臨」「モレイラマジックか豊マジックか」今年もいきなりG1制覇狙うマジックマンに熱視線　マイルCSはロデオドライブ",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349353",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 06:40:00 +0900",
       "kind": "upcoming",
       "genre": "jra"
     },
@@ -57,9 +81,49 @@
       "date": "11月14日（土曜）",
       "kind": "upcoming",
       "genre": "large_event"
+    },
+    {
+      "title": "【マイルCS/予想対談】王者不在のマイルCS！ 気になる海外馬エルデナリの評価は!?",
+      "url": "https://news.netkeiba.com/?pid=column_view&cid=59919",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 12:00:00 +0900",
+      "kind": "upcoming",
+      "genre": "jra"
+    },
+    {
+      "title": "先週の競馬、そして今週",
+      "url": "https://news.netkeiba.com/?pid=column_view&cid=59924",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 12:00:00 +0900",
+      "kind": "upcoming",
+      "genre": "jra"
     }
   ],
   "results": [
+    {
+      "title": "【マイルCS・枠順確定】G1連勝狙う武豊騎手のアドマイヤズームは3枠5番　G1・3勝のエンブロイダリーは1枠2番",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349358",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 09:51:00 +0900",
+      "kind": "result",
+      "genre": "jra"
+    },
+    {
+      "title": "【マイルCS・金曜気配】G1連続2着ワールズエンドは6枠12番　池添調教師は笑み「枠の色も勝負服と一緒ですからね」",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349371",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 13:00:00 +0900",
+      "kind": "result",
+      "genre": "jra"
+    },
+    {
+      "title": "【福島記念】皐月賞5着のフォルテアンジェロは6枠11番に決定　マリアイリダータは7枠13番　枠順確定",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349360",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 10:35:00 +0900",
+      "kind": "result",
+      "genre": "large_event"
+    },
     {
       "title": "11月23日（祝日・月曜）週の平日払戻サービスについて",
       "url": "https://www.jra.go.jp/news/202611/111502.html",
@@ -73,6 +137,22 @@
       "url": "https://www.jra.go.jp/news/202611/111503.html",
       "source": "JRA",
       "date": "11月15日（日曜）",
+      "kind": "result",
+      "genre": "jra"
+    },
+    {
+      "title": "【福島記念枠順確定】マリアイリダータは7枠13番、フォルテアンジェロは6枠11番",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349328",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 10:10:00 +0900",
+      "kind": "result",
+      "genre": "jra"
+    },
+    {
+      "title": "【マイルCS枠順確定】エンブロイダリーは1枠2番、スターアニスは7枠14番",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349327",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 09:10:00 +0900",
       "kind": "result",
       "genre": "jra"
     },
@@ -116,6 +196,22 @@
     }
   ],
   "news": [
+    {
+      "title": "「年明けの楽しみが100倍に」「初詣がてら買いたくなる」武豊騎手が新コンビと京都金杯へ…SNS早くも大盛り上がり",
+      "url": "https://news.netkeiba.com/?pid=news_view&no=349369",
+      "source": "netkeiba",
+      "date": "Fri, 20 Nov 2026 12:11:00 +0900",
+      "kind": "news",
+      "genre": "jra"
+    },
+    {
+      "title": "マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月20日（金曜））",
+      "url": "https://www.jra.go.jp/news/202611/112002.html",
+      "source": "JRA",
+      "date": "11月20日（金曜）",
+      "kind": "news",
+      "genre": "large_event"
+    },
     {
       "title": "ステレンボッシュの競走馬登録抹消",
       "url": "https://www.jra.go.jp/news/202611/111911.html",
@@ -179,23 +275,7 @@
       "date": "11月18日（水曜）",
       "kind": "news",
       "genre": "large_event"
-    },
-    {
-      "title": "岡田　祥嗣騎手の引退",
-      "url": "https://www.jra.go.jp/news/202611/111801.html",
-      "source": "JRA",
-      "date": "11月18日（水曜）",
-      "kind": "news",
-      "genre": "jra"
-    },
-    {
-      "title": "マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月17日（火曜））",
-      "url": "https://www.jra.go.jp/news/202611/111702.html",
-      "source": "JRA",
-      "date": "11月17日（火曜）",
-      "kind": "news",
-      "genre": "large_event"
     }
   ],
-  "ai_text": "【競馬AI学習データ 2026-11-19】\n■ 直近レース予定・注目ニュース\n・重賞・オープン特別競走（11月14日から15日）のレーティング（JRA）\n・エリザベス女王杯（GⅠ）　出走馬の「調教後の馬体重」（JRA）\n・マイルチャンピオンシップ（GⅠ）　出走馬の「調教後の馬体重」（JRA）\n・開催競馬場・今日の出来事、明日の取消・変更等（11月14日（土曜））（JRA）\n・開催競馬場・今日の出来事（11月15日（日曜））（JRA）\n・11月21日（土曜）、22日（日曜）、23日（祝日・月曜）は3日連続開催（JRA）\n・有馬記念（GⅠ）当日のラウンジエリア一般開放と有料席発売休止のご案内【ライトウインズりんくうタウン】（JRA）\n・ステレンボッシュの競走馬登録抹消（JRA）\n・チェルヴィニアの競走馬登録抹消（JRA）\n・ラヴァンダの競走馬登録抹消（JRA）\n・ジョアン・モレイラ騎手に短期免許の交付（JRA）\n・「2026ヤングジョッキーズシリーズ　ファイナルラウンド」騎乗予定騎手の変更（JRA）\n・マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月19日（木曜））（JRA）\n・キャンディードの競走馬登録抹消（JRA）\n・マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月18日（水曜））（JRA）\n■ 過去1週間の主な結果・ニュース\n・11月23日（祝日・月曜）週の平日払戻サービスについて（JRA）\n・11月30日（月曜）週の平日払戻サービスについて（JRA）\n・11月8日 大井 11R 南関東S / ダート1600m・良（手動貼付）"
+  "ai_text": "【競馬AI学習データ 2026-11-20】\n■ 直近レース予定・注目ニュース\n・重賞・オープン特別競走（11月14日から15日）のレーティング（JRA）\n・マイルチャンピオンシップ（GⅠ）　出走馬の「調教後の馬体重」（JRA）\n・開催競馬場・今日の出来事、明日の取消・変更等（11月14日（土曜））（JRA）\n・【注目馬動向】「清き一票を」友道調教師がスティンガーグラスの有馬出走にGOサイン　昨年は特別登録も出走せず（netkeiba）\n・【ジャパンC・1週前】メイショウタバル宝塚記念との比較で物足りなさも石橋調教師「意外性と騎手の豊に任せたい」（netkeiba）\n・【岩田康誠の熱血!!競馬道】霜月Sのヤマニンアストロンは重賞でもやれそうな好素材　「内でタメが利けば、もう一段上の脚を繰り出せます」（netkeiba）\n・開催競馬場・今日の出来事（11月15日（日曜））（JRA）\n・「雷神降臨」「モレイラマジックか豊マジックか」今年もいきなりG1制覇狙うマジックマンに熱視線　マイルCSはロデオドライブ（netkeiba）\n・11月21日（土曜）、22日（日曜）、23日（祝日・月曜）は3日連続開催（JRA）\n・有馬記念（GⅠ）当日のラウンジエリア一般開放と有料席発売休止のご案内【ライトウインズりんくうタウン】（JRA）\n・【マイルCS/予想対談】王者不在のマイルCS！ 気になる海外馬エルデナリの評価は!?（netkeiba）\n・先週の競馬、そして今週（netkeiba）\n・「年明けの楽しみが100倍に」「初詣がてら買いたくなる」武豊騎手が新コンビと京都金杯へ…SNS早くも大盛り上がり（netkeiba）\n・マイルチャンピオンシップ（GⅠ）外国馬情報　調教状況・関係者コメント（11月20日（金曜））（JRA）\n・ステレンボッシュの競走馬登録抹消（JRA）\n■ 過去1週間の主な結果・ニュース\n・【マイルCS・枠順確定】G1連勝狙う武豊騎手のアドマイヤズームは3枠5番　G1・3勝のエンブロイダリーは1枠2番（netkeiba）\n・【マイルCS・金曜気配】G1連続2着ワールズエンドは6枠12番　池添調教師は笑み「枠の色も勝負服と一緒ですからね」（netkeiba）\n・【福島記念】皐月賞5着のフォルテアンジェロは6枠11番に決定　マリアイリダータは7枠13番　枠順確定（netkeiba）\n・11月23日（祝日・月曜）週の平日払戻サービスについて（JRA）\n・11月30日（月曜）週の平日払戻サービスについて（JRA）\n・【福島記念枠順確定】マリアイリダータは7枠13番、フォルテアンジェロは6枠11番（netkeiba）\n・【マイルCS枠順確定】エンブロイダリーは1枠2番、スターアニスは7枠14番（netkeiba）\n・11月8日 大井 11R 南関東S / ダート1600m・良（手動貼付）"
 }
